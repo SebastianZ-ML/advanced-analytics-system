@@ -40,8 +40,22 @@ class AnalyticalExecutorAgent(BaseAgent):
         date_candidates = [c for c in analytical_df.columns if "date" in c.lower() or "fecha" in c.lower() or "time" in c.lower()]
         primary_date_col = date_candidates[0] if date_candidates else analytical_df.columns[0]
 
+        # Resolve target metric from plan if specified
+        plan_metric = None
+        for op in plan.operations:
+            if op.parameters and "metric" in op.parameters and op.parameters["metric"] in analytical_df.columns:
+                plan_metric = op.parameters["metric"]
+                break
+
         numeric_candidates = [c for c in analytical_df.columns if pd.api.types.is_numeric_dtype(analytical_df[c]) and "id" not in c.lower()]
-        primary_metric_col = "net_sales" if "net_sales" in analytical_df.columns else (numeric_candidates[0] if numeric_candidates else analytical_df.columns[0])
+        if plan_metric:
+            primary_metric_col = plan_metric
+        elif "net_sales" in analytical_df.columns:
+            primary_metric_col = "net_sales"
+        elif numeric_candidates:
+            primary_metric_col = numeric_candidates[0]
+        else:
+            primary_metric_col = analytical_df.columns[0]
 
         # Monthly aggregation calculated with resolved columns
         monthly_trend = DuckDBAnalyticsEngine.calculate_monthly_trend(
@@ -104,14 +118,24 @@ class AnalyticalExecutorAgent(BaseAgent):
                 else:
                     default_base, default_curr = "P1", "P2"
 
+                valid_periods = [m["period"] for m in monthly_trend] if monthly_trend else []
                 base_p = op.parameters.get("baseline_period", default_base)
                 curr_p = op.parameters.get("current_period", default_curr)
+                if valid_periods:
+                    if base_p not in valid_periods:
+                        base_p = default_base
+                    if curr_p not in valid_periods:
+                        curr_p = default_curr
+
+                metric = op.parameters.get("metric", primary_metric_col)
+                if not metric or metric not in analytical_df.columns:
+                    metric = primary_metric_col
 
                 m_base = next((m for m in monthly_trend if m["period"] == base_p), None)
                 m_curr = next((m for m in monthly_trend if m["period"] == curr_p), None)
 
-                base_val = m_base.get(primary_metric_col, m_base.get("net_sales", 0.0)) if m_base else 0.0
-                curr_val = m_curr.get(primary_metric_col, m_curr.get("net_sales", 0.0)) if m_curr else 0.0
+                base_val = m_base.get(metric, m_base.get(primary_metric_col, m_base.get("net_sales", 0.0))) if m_base else 0.0
+                curr_val = m_curr.get(metric, m_curr.get(primary_metric_col, m_curr.get("net_sales", 0.0))) if m_curr else 0.0
                 delta = round(curr_val - base_val, 2)
                 pct_chg = round((delta / base_val) * 100, 2) if base_val != 0 else 0.0
 
@@ -129,6 +153,7 @@ class AnalyticalExecutorAgent(BaseAgent):
                         "current_period": curr_p,
                         "baseline_net_sales": base_val,
                         "current_net_sales": curr_val,
+                        metric: curr_val,
                         primary_metric_col: curr_val,
                         "absolute_change": delta,
                         "percentage_change": pct_chg
@@ -143,9 +168,21 @@ class AnalyticalExecutorAgent(BaseAgent):
                     cat_cols = [c for c in analytical_df.columns if not pd.api.types.is_numeric_dtype(analytical_df[c]) and "id" not in c.lower()]
                     dim = cat_cols[0] if cat_cols else "channel"
 
-                base_p = op.parameters.get("baseline_period", monthly_trend[0]["period"] if monthly_trend else "2026-03")
-                curr_p = op.parameters.get("current_period", monthly_trend[-1]["period"] if monthly_trend else "2026-05")
-                metric = op.parameters.get("metric", primary_metric_col)
+                valid_periods = [m["period"] for m in monthly_trend] if monthly_trend else []
+                def_b = valid_periods[0] if valid_periods else "2026-03"
+                def_c = valid_periods[-1] if valid_periods else "2026-05"
+
+                base_p = op.parameters.get("baseline_period", def_b)
+                curr_p = op.parameters.get("current_period", def_c)
+                if valid_periods:
+                    if base_p not in valid_periods:
+                        base_p = def_b
+                    if curr_p not in valid_periods:
+                        curr_p = def_c
+
+                metric = op.parameters.get("metric")
+                if not metric or metric not in analytical_df.columns:
+                    metric = primary_metric_col
 
                 breakdown = DuckDBAnalyticsEngine.calculate_period_breakdown(
                     df=analytical_df,

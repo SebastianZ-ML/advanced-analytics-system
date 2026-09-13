@@ -500,12 +500,23 @@ class DuckDBAnalyticsEngine:
                 step_idx += 1
 
         # Numeric casts and auditable quarantine on fact table
-        numeric_cols_to_audit = [
-            c for c in df_orders.columns
-            if c in ["units", "unit_price", "discount_amount", "gross_sales", "net_sales"]
-            or (semantic_model and hasattr(semantic_model, "metrics") and any(m.name == c for m in semantic_model.metrics))
-            or pd.api.types.is_numeric_dtype(df_orders[c])
-        ]
+        numeric_cols_to_audit = []
+        for c in df_orders.columns:
+            if c in ["units", "unit_price", "discount_amount", "gross_sales", "net_sales"]:
+                numeric_cols_to_audit.append(c)
+            elif semantic_model and hasattr(semantic_model, "metrics") and any(m.name == c for m in semantic_model.metrics):
+                numeric_cols_to_audit.append(c)
+            elif pd.api.types.is_numeric_dtype(df_orders[c]):
+                numeric_cols_to_audit.append(c)
+            elif "id" not in c.lower() and "date" not in c.lower() and "fecha" not in c.lower() and "status" not in c.lower() and "estado" not in c.lower():
+                # Check if non-empty values are largely parseable numbers
+                non_empty = df_orders[c].dropna().astype(str).str.strip()
+                non_empty = non_empty[non_empty != ""]
+                if len(non_empty) > 0:
+                    conv = pd.to_numeric(non_empty.str.replace(",", "."), errors="coerce")
+                    if conv.notna().sum() / len(non_empty) >= 0.7:
+                        numeric_cols_to_audit.append(c)
+
         df_orders, num_quarantined = QuarantineManager.audit_and_clean_numerics(
             df=df_orders,
             table_name=fact_key,
@@ -655,19 +666,44 @@ class DuckDBAnalyticsEngine:
         df_copy = df.copy()
         if dimension not in df_copy.columns:
             df_copy[dimension] = "Unclassified"
-        df_copy["year_month"] = pd.to_datetime(df_copy["order_date_clean"]).dt.strftime("%Y-%m")
+
+        # Resolve date column
+        dt_col = next((c for c in df_copy.columns if c == "order_date_clean" or "date" in c.lower() or "fecha" in c.lower() or "period" in c.lower() or "time" in c.lower()), None)
+        if "year_month" not in df_copy.columns:
+            if dt_col:
+                try:
+                    df_copy["year_month"] = pd.to_datetime(df_copy[dt_col]).dt.strftime("%Y-%m")
+                except Exception:
+                    df_copy["year_month"] = df_copy[dt_col].astype(str).str.slice(0, 7)
+            else:
+                df_copy["year_month"] = "P1"
+
+        # Resolve metric column
+        if metric not in df_copy.columns:
+            num_cols = [c for c in df_copy.columns if pd.api.types.is_numeric_dtype(df_copy[c]) and "id" not in c.lower() and c != "year_month"]
+            metric = num_cols[0] if num_cols else df_copy.columns[0]
+
+        df_copy[metric] = pd.to_numeric(df_copy[metric], errors="coerce").fillna(0.0)
+
+        # Dynamic period fallback
+        distinct_periods = sorted([p for p in df_copy["year_month"].dropna().unique() if str(p) not in ["nan", "NaT", ""]])
+        if distinct_periods:
+            if baseline_period not in distinct_periods:
+                baseline_period = distinct_periods[0]
+            if current_period not in distinct_periods:
+                current_period = distinct_periods[-1] if len(distinct_periods) > 1 else distinct_periods[0]
 
         df_base = df_copy[df_copy["year_month"] == baseline_period]
         df_curr = df_copy[df_copy["year_month"] == current_period]
 
-        total_base = float(df_base[metric].sum())
-        total_curr = float(df_curr[metric].sum())
+        total_base = float(df_base[metric].sum()) if not df_base.empty else 0.0
+        total_curr = float(df_curr[metric].sum()) if not df_curr.empty else 0.0
         total_change = float(total_curr - total_base)
         total_pct_change = round((total_change / total_base) * 100, 2) if total_base != 0 else 0.0
 
         # Group by dimension
-        dim_base = df_base.groupby(dimension, observed=False)[metric].sum().to_dict()
-        dim_curr = df_curr.groupby(dimension, observed=False)[metric].sum().to_dict()
+        dim_base = df_base.groupby(dimension, observed=False)[metric].sum().to_dict() if not df_base.empty else {}
+        dim_curr = df_curr.groupby(dimension, observed=False)[metric].sum().to_dict() if not df_curr.empty else {}
 
         all_keys = sorted(list(set(dim_base.keys()).union(set(dim_curr.keys()))))
         contributions: List[DimensionContribution] = []
@@ -791,15 +827,18 @@ class DuckDBAnalyticsEngine:
                 num_cols = [c for c in df_copy.columns if pd.api.types.is_numeric_dtype(df_copy[c]) and "id" not in c.lower() and c != "year_month"]
                 metric_col = num_cols[0] if num_cols else df_copy.columns[0]
 
+        if metric_col in df_copy.columns:
+            df_copy[metric_col] = pd.to_numeric(df_copy[metric_col], errors="coerce").fillna(0.0)
+
         res = []
         for ym, grp in df_copy.groupby("year_month"):
             entry = {
                 "period": ym,
-                metric_col: round(float(grp[metric_col].sum()), 2) if metric_col in grp.columns and pd.api.types.is_numeric_dtype(grp[metric_col]) else 0.0,
+                metric_col: round(float(grp[metric_col].sum()), 2) if metric_col in grp.columns else 0.0,
                 "gross_sales": round(float(grp["gross_sales"].sum()), 2) if "gross_sales" in grp.columns else 0.0,
                 "units": int(grp["units"].sum()) if "units" in grp.columns else 0,
                 "order_count": int(len(grp)),
-                "avg_order_value": round(float(grp[metric_col].mean()), 2) if metric_col in grp.columns and pd.api.types.is_numeric_dtype(grp[metric_col]) else 0.0
+                "avg_order_value": round(float(grp[metric_col].mean()), 2) if metric_col in grp.columns else 0.0
             }
             # Maintain backward compatibility alias
             if metric_col != "net_sales":

@@ -172,6 +172,28 @@ class DatabaseService:
         return [dict(r) for r in rows]
 
     @staticmethod
+    def remove_project_file(file_id: str) -> bool:
+        conn = get_db_connection()
+        with conn:
+            cursor = conn.execute("DELETE FROM project_files WHERE file_id = ?", (file_id,))
+            deleted = cursor.rowcount > 0
+        conn.close()
+        return deleted
+
+    @staticmethod
+    def delete_project_file_by_table(project_id: str, table_name: str) -> bool:
+        conn = get_db_connection()
+        with conn:
+            cursor = conn.execute(
+                "DELETE FROM project_files WHERE project_id = ? AND table_name = ?",
+                (project_id, table_name)
+            )
+            deleted = cursor.rowcount > 0
+        conn.close()
+        return deleted
+
+
+    @staticmethod
     def create_run(run_id: str, project_id: str, initial_stage: str = "UPLOADED") -> Dict[str, Any]:
         conn = get_db_connection()
         now = datetime.now(timezone.utc).isoformat()

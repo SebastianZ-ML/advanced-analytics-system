@@ -187,18 +187,26 @@ class MethodologistAgent(BaseAgent):
                 print(f"[MethodologistAgent] Fallback activated after error in plan proposal: {e}")
 
         # Deterministic fallback plan
-        return self._build_deterministic_plan(project_id, run_id)
+        return self._build_deterministic_plan(project_id, run_id, objective)
 
-    def _build_deterministic_plan(self, project_id: str, run_id: str) -> AnalysisPlan:
+    def _build_deterministic_plan(self, project_id: str, run_id: str, objective: Optional[ObjectiveSpec] = None) -> AnalysisPlan:
         ops = []
+        target_metric = "net_sales"
+        if objective and objective.primary_metric:
+            target_metric = objective.primary_metric.split(" ")[0].split("(")[0].strip()
+
         for m in REGISTERED_METHODS_CATALOG:
+            params = dict(m["parameters"])
+            if "metric" in params:
+                params["metric"] = target_metric
+
             ops.append(OperationSpec(
                 step_id=m["step_id"],
                 operation_name=m["operation_name"],
                 category=m["category"],
                 description=m["description"],
                 required_inputs=m["required_inputs"],
-                parameters=m["parameters"],
+                parameters=params,
                 assumptions=m["assumptions"],
                 pre_execution_validations=m["pre_execution_validations"],
                 depends_on=m["depends_on"]

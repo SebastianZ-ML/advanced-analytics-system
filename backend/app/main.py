@@ -13,6 +13,7 @@ from app.storage.db import init_db
 from app.api.projects import router as projects_router
 from app.api.pipeline import router as pipeline_router
 from app.api.chat import router as chat_router
+from app.api.samples import router as samples_router
 
 
 @asynccontextmanager
@@ -42,6 +43,7 @@ app.add_middleware(
 app.include_router(projects_router)
 app.include_router(pipeline_router)
 app.include_router(chat_router)
+app.include_router(samples_router)
 
 
 @app.get("/api/health")
