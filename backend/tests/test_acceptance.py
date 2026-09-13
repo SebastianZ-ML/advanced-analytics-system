@@ -259,7 +259,7 @@ def test_8_rejection_of_nan_or_infinite_values():
     corrupt_result = AnalysisResult(
         result_id="RES_CORRUPT",
         step_id="OP_TEST",
-        operation_name="Cálculo con NaN",
+        operation_name="Calculation with NaN",
         method="Test Method",
         parameters={},
         data_source_version="v1.0",
@@ -286,7 +286,7 @@ def test_09_propagation_of_rejected_result_to_dashboard_and_chat():
     rejected_res = AnalysisResult(
         result_id="RES_REJECTED",
         step_id="OP_FAIL",
-        operation_name="Operación fallida",
+        operation_name="Failed operation",
         method="Faulty",
         parameters={},
         data_source_version="v1.0",
@@ -308,11 +308,11 @@ def test_09_propagation_of_rejected_result_to_dashboard_and_chat():
         run_id="run_test",
         title="Dashboard Test",
         subtitle="",
-        objective_question="Pregunta test",
+        objective_question="Test question",
         metric_cards=[
             MetricCardSpec(
                 id="CARD_1",
-                title="Métrica Rechazada",
+                title="Rejected Metric",
                 value="999",
                 result_id="RES_REJECTED",
                 period="2026-03",
@@ -327,7 +327,7 @@ def test_09_propagation_of_rejected_result_to_dashboard_and_chat():
     validated_dash = dash_validator.validate_dashboard(dash, [rejected_res], v_report)
 
     assert validated_dash.is_dashboard_validated is False
-    assert any("RECHAZO" in note for note in validated_dash.validation_notes)
+    assert any("REJECTED" in note for note in validated_dash.validation_notes)
 
 
 # ---------------------------------------------------------------------------
@@ -395,8 +395,8 @@ def test_11_filters_update_figures_coherently(setup_demo_data):
     )
 
     total_net = analytical_df["net_sales"].sum()
-    metro_net = analytical_df[analytical_df["region"] == "Metropolitana"]["net_sales"].sum()
-    norte_net = analytical_df[analytical_df["region"] == "Norte"]["net_sales"].sum()
+    metro_net = analytical_df[analytical_df["region"] == "Metropolitan"]["net_sales"].sum()
+    norte_net = analytical_df[analytical_df["region"] == "North"]["net_sales"].sum()
 
     assert metro_net > 0
     assert norte_net > 0
@@ -409,15 +409,15 @@ def test_11_filters_update_figures_coherently(setup_demo_data):
 def test_12_chatbot_triggers_real_calculation():
     assistant = ConversationalAssistantAgent()
     df_mock = pd.DataFrame([
-        {"net_sales": 5000.0, "region": "Norte", "channel": "Retail / Tiendas"},
-        {"net_sales": 3000.0, "region": "Norte", "channel": "Online / Directo"},
-        {"net_sales": 10000.0, "region": "Sur", "channel": "Retail / Tiendas"}
+        {"net_sales": 5000.0, "region": "North", "channel": "Retail / Stores"},
+        {"net_sales": 3000.0, "region": "North", "channel": "Online / Direct"},
+        {"net_sales": 10000.0, "region": "South", "channel": "Retail / Stores"}
     ])
 
     req = ChatRequest(
         project_id="p1",
         run_id="r1",
-        question="¿Cuánto vendió la región Norte?"
+        question="How much did the North region sell?"
     )
 
     ans = assistant.answer_query(
@@ -444,7 +444,7 @@ def test_13_unanswerable_question_receives_explicit_limitation():
     req = ChatRequest(
         project_id="p1",
         run_id="r1",
-        question="¿Qué competidor bajó precios y provocó la caída?"
+        question="Which competitor lowered prices and caused the drop?"
     )
 
     ans = assistant.answer_query(
@@ -458,7 +458,7 @@ def test_13_unanswerable_question_receives_explicit_limitation():
     )
 
     assert ans.query_type == "unanswerable_by_data"
-    assert "no contienen información sobre 'competidor'" in ans.answer_text
+    assert "does not contain information regarding 'competitor'" in ans.answer_text
     assert ans.data_limitation_notice is not None
 
 

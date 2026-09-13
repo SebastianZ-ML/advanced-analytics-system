@@ -1,5 +1,5 @@
 """
-Agent I: Dashboard Validator (Validador de Dashboard).
+Agent I: Dashboard Validator.
 Performs independent checks on the assembled DashboardSpec:
 - Guarantees numbers shown in cards match underlying results.
 - Assures no rejected results are exposed.
@@ -12,7 +12,7 @@ from app.contracts import AnalysisResult, DashboardSpec, ValidationReport
 
 class DashboardValidatorAgent(BaseAgent):
     def __init__(self):
-        super().__init__(name="Agente Validador de Dashboard", role="Auditoría de consistencia de visualizaciones y control de cifras visibles")
+        super().__init__(name="Dashboard Validator Agent", role="Consistency audit of visualizations and displayed figures")
 
     def validate_dashboard(
         self,
@@ -33,42 +33,42 @@ class DashboardValidatorAgent(BaseAgent):
         for card in dashboard.metric_cards:
             if card.result_id in rejected_ids:
                 is_valid = False
-                notes.append(f"RECHAZO: La tarjeta '{card.title}' intenta mostrar el resultado rechazado '{card.result_id}'.")
+                notes.append(f"REJECTED: Card '{card.title}' attempts to display rejected result '{card.result_id}'.")
             elif card.result_id not in res_map:
                 is_valid = False
-                notes.append(f"RECHAZO: La tarjeta '{card.title}' referencia un resultado inexistente '{card.result_id}'.")
+                notes.append(f"REJECTED: Card '{card.title}' references non-existent result '{card.result_id}'.")
             else:
-                notes.append(f"OK: Tarjeta '{card.title}' vinculada a resultado válido '{card.result_id}'.")
+                notes.append(f"OK: Card '{card.title}' linked to valid result '{card.result_id}'.")
 
         # Check 2: No rejected result in charts
         for chart in dashboard.charts:
             if chart.result_id in rejected_ids:
                 is_valid = False
-                notes.append(f"RECHAZO: El gráfico '{chart.title}' intenta mostrar el resultado rechazado '{chart.result_id}'.")
+                notes.append(f"REJECTED: Chart '{chart.title}' attempts to display rejected result '{chart.result_id}'.")
             elif chart.result_id not in res_map:
                 is_valid = False
-                notes.append(f"RECHAZO: El gráfico '{chart.title}' referencia un resultado inexistente '{chart.result_id}'.")
+                notes.append(f"REJECTED: Chart '{chart.title}' references non-existent result '{chart.result_id}'.")
             else:
-                notes.append(f"OK: Gráfico '{chart.title}' vinculado a resultado válido '{chart.result_id}'.")
+                notes.append(f"OK: Chart '{chart.title}' linked to valid result '{chart.result_id}'.")
 
         # Check 3: Check Period Alignment between cards and primary waterfall chart
         waterfall_chart = next((c for c in dashboard.charts if c.is_primary_objective), None)
-        total_drop_card = next((c for c in dashboard.metric_cards if "Total" in c.title or "Contracción" in c.title), None)
+        total_drop_card = next((c for c in dashboard.metric_cards if "Total" in c.title or "Contraction" in c.title or "Decline" in c.title), None)
         if waterfall_chart and total_drop_card:
             if waterfall_chart.period != total_drop_card.period:
                 is_valid = False
                 notes.append(
-                    f"RECHAZO: Desalineación de períodos entre tarjeta ({total_drop_card.period}) "
-                    f"y gráfico principal ({waterfall_chart.period})."
+                    f"REJECTED: Period mismatch between card ({total_drop_card.period}) "
+                    f"and primary chart ({waterfall_chart.period})."
                 )
             else:
-                notes.append(f"OK: Períodos alineados entre tarjeta resumen y gráfico de descomposición ({waterfall_chart.period}).")
+                notes.append(f"OK: Periods aligned between summary card and decomposition chart ({waterfall_chart.period}).")
 
         # Check 4: Non-empty data in charts
         for chart in dashboard.charts:
             if not chart.data:
                 is_valid = False
-                notes.append(f"RECHAZO: El gráfico '{chart.title}' no contiene registros de datos para graficar.")
+                notes.append(f"REJECTED: Chart '{chart.title}' contains no data points to display.")
 
         dashboard.is_dashboard_validated = is_valid
         dashboard.validation_notes = notes

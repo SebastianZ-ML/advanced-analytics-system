@@ -83,8 +83,8 @@ class Settings(BaseModel):
     @property
     def mode_label(self) -> str:
         if self.operating_mode == "LLM_ENABLED":
-            return f"Gemini habilitado ({self.gemini_model})"
-        return "Demostración sin LLM (Motor analítico determinista)"
+            return f"Gemini Enabled ({self.gemini_model})"
+        return "Demo Without LLM (Deterministic Analytics Engine)"
 
 
 settings = Settings()

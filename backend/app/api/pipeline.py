@@ -14,8 +14,8 @@ router = APIRouter(prefix="/api", tags=["pipeline"])
 
 class RunCreateRequest(BaseModel):
     objective_question: Optional[str] = (
-        "Las ventas bajaron durante los últimos meses. "
-        "Quiero entender dónde se concentra la caída, qué factores observables la explican y qué acciones conviene investigar."
+        "Sales declined over recent months. "
+        "I want to understand where the drop is concentrated, what observable factors explain it, and what actions should be investigated."
     )
     user_clarifications: Optional[Dict[str, str]] = None
     force_error_for_test: Optional[bool] = False
@@ -25,7 +25,7 @@ class RunCreateRequest(BaseModel):
 def start_pipeline_run(project_id: str, req: RunCreateRequest) -> Dict[str, Any]:
     proj = DatabaseService.get_project(project_id)
     if not proj:
-        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+        raise HTTPException(status_code=404, detail="Project not found")
 
     run_id = f"run_{uuid.uuid4().hex[:8]}"
     DatabaseService.create_run(run_id, project_id)
@@ -50,7 +50,7 @@ def start_pipeline_run(project_id: str, req: RunCreateRequest) -> Dict[str, Any]
 def get_run_status(run_id: str) -> Dict[str, Any]:
     run = DatabaseService.get_run(run_id)
     if not run:
-        raise HTTPException(status_code=404, detail="Ejecución no encontrada")
+        raise HTTPException(status_code=404, detail="Run not found")
     events = DatabaseService.get_run_events(run_id)
     return {**run, "events": events}
 
@@ -59,7 +59,7 @@ def get_run_status(run_id: str) -> Dict[str, Any]:
 def get_run_artifacts(run_id: str) -> Dict[str, Any]:
     run = DatabaseService.get_run(run_id)
     if not run:
-        raise HTTPException(status_code=404, detail="Ejecución no encontrada")
+        raise HTTPException(status_code=404, detail="Run not found")
     return DatabaseService.get_all_run_artifacts(run_id)
 
 

@@ -1,5 +1,5 @@
 """
-Agent J: Conversational Assistant (Asistente Conversacional).
+Agent J: Conversational Assistant.
 Provides grounded Q&A with explicit provenance citations.
 Distinguishes:
 1. Explaining existing results.
@@ -25,7 +25,7 @@ from app.providers import ContextBuilder, LLMProvider, get_llm_provider
 
 class ConversationalAssistantAgent(BaseAgent):
     def __init__(self, override_provider: Optional[LLMProvider] = None):
-        super().__init__(name="Asistente Conversacional", role="Respuestas fundamentadas con citas de procedencia y recálculos controlados")
+        super().__init__(name="Conversational Assistant Agent", role="Grounded answers with provenance citations and controlled recalculations")
         self._override_provider = override_provider
 
     def answer_query(
@@ -51,20 +51,24 @@ class ConversationalAssistantAgent(BaseAgent):
         # -------------------------------------------------------------------
         # Class 4: Unanswerable Questions (Information absent from dataset)
         # -------------------------------------------------------------------
-        unanswerable_triggers = ["competidor", "competencia", "inflación", "precio de la competencia", "clima", "rating", "televisión", "desabastecimiento externo", "satisfacción de cliente", "nps"]
+        unanswerable_triggers = [
+            "competitor", "competition", "inflation", "competitor price", "weather", 
+            "rating", "television", "external stockout", "customer satisfaction", "nps",
+            "competidor", "competencia", "inflación", "precio de la competencia", "clima"
+        ]
         if any(trigger in q for trigger in unanswerable_triggers):
             missing_concept = next(trigger for trigger in unanswerable_triggers if trigger in q)
             return ChatAnswer(
                 schema_version="1.0",
                 query_type="unanswerable_by_data",
                 answer_text=(
-                    f"Los datos disponibles en el proyecto actual no contienen información sobre '{missing_concept}'. "
-                    f"Las tablas cargadas ({', '.join(catalog.tables.keys())}) registran únicamente transacciones de pedidos, "
-                    f"clientes registrados, catálogo de productos y presupuestos de campañas de marketing. "
-                    f"Para analizar este factor, sería necesario incorporar fuentes externas de investigación de mercado o inventario logístico."
+                    f"The data available in the current project does not contain information regarding '{missing_concept}'. "
+                    f"The loaded tables ({', '.join(catalog.tables.keys())}) record order transactions, "
+                    f"registered customers, product catalog, and marketing campaign budgets only. "
+                    f"To analyze this factor, external market research or logistical inventory sources would need to be incorporated."
                 ),
                 citations=[],
-                data_limitation_notice=f"Ausencia de datos de '{missing_concept}' en el catálogo de datos del proyecto.",
+                data_limitation_notice=f"Absence of '{missing_concept}' data in the project data catalog.",
                 requires_full_pipeline=False,
                 is_demo_mode=is_demo
             )
@@ -72,18 +76,22 @@ class ConversationalAssistantAgent(BaseAgent):
         # -------------------------------------------------------------------
         # Class 3: Request for New Analysis (Requires Pipeline, not quick query)
         # -------------------------------------------------------------------
-        new_analysis_triggers = ["nuevo análisis", "modelo predictivo", "cluster", "clustering", "arbol de decision", "predecir el futuro", "optimizar precios", "elasticidad precio"]
+        new_analysis_triggers = [
+            "new analysis", "predictive model", "cluster", "clustering", "decision tree", 
+            "predict the future", "price optimization", "price elasticity",
+            "nuevo análisis", "modelo predictivo", "predecir"
+        ]
         if any(trigger in q for trigger in new_analysis_triggers):
             return ChatAnswer(
                 schema_version="1.0",
                 query_type="request_new_analysis",
                 answer_text=(
-                    "Esta solicitud requiere diseñar un nuevo plan analítico formal (definición de objetivo, selección metodológica, "
-                    "preparación de variables y validación independiente). Para no generar cifras improvisadas sin control de calidad, "
-                    "te invito a iniciar una nueva ejecución configurando este objetivo en la sección de Planificación."
+                    "This request requires designing a formal new analytical plan (objective definition, method selection, "
+                    "variable preparation, and independent validation). To avoid generating unsubstantiated numbers without quality controls, "
+                    "you can initiate a new execution by defining this objective in the Planning section."
                 ),
                 citations=[],
-                calculation_summary="Solicitud clasificada como nuevo análisis. Requiere orquestación por el Agente Metodólogo.",
+                calculation_summary="Request classified as new analysis. Requires orchestration by the Methodologist Agent.",
                 requires_full_pipeline=True,
                 is_demo_mode=is_demo
             )
@@ -91,32 +99,61 @@ class ConversationalAssistantAgent(BaseAgent):
         # -------------------------------------------------------------------
         # Class 2: Recalculate Metric with Custom Filters (Deterministic Engine)
         # -------------------------------------------------------------------
-        recalc_triggers = ["cuánto vendió", "cuanto vendio", "calcular", "recalcular", "si filtramos", "filtrar por", "sólo en", "solo en", "región", "region"]
+        recalc_triggers = [
+            "how much did", "how much was sold", "calculate", "recalculate", "filter by", 
+            "filtered by", "only in", "region", "channel", "cuánto vendió", "cuanto vendio", 
+            "calcular", "recalcular", "si filtramos", "filtrar por", "sólo en", "solo en", "región"
+        ]
         has_filter_request = bool(active_filters) or any(t in q for t in recalc_triggers)
 
-        if has_filter_request and ("cuánto" in q or "cuanto" in q or "ventas en" in q or active_filters):
+        if has_filter_request and ("how much" in q or "cuánto" in q or "cuanto" in q or "sales in" in q or "ventas en" in q or active_filters):
             # Apply real filters to analytical_df
             filtered_df = analytical_df.copy()
             applied_desc = []
 
-            # Check region in text or filters
-            for reg in ["Metropolitana", "Norte", "Centro", "Sur"]:
-                if reg.lower() in q or active_filters.get("region") == reg:
+            # Region mapping
+            region_map = {
+                "metropolitana": "Metropolitan",
+                "metropolitan": "Metropolitan",
+                "norte": "North",
+                "north": "North",
+                "centro": "Central",
+                "central": "Central",
+                "sur": "South",
+                "south": "South"
+            }
+            for reg_k, reg_norm in region_map.items():
+                if reg_k in q or active_filters.get("region", "").lower() == reg_k:
                     if "region" in filtered_df.columns:
-                        filtered_df = filtered_df[filtered_df["region"] == reg]
-                        applied_desc.append(f"Región = '{reg}'")
+                        # Match either normalized or direct string
+                        mask = filtered_df["region"].astype(str).str.lower().isin([reg_k, reg_norm.lower()])
+                        filtered_df = filtered_df[mask]
+                        applied_desc.append(f"Region = '{reg_norm}'")
+                    break
 
-            # Check channel in text or filters
-            for ch in ["Mayorista / B2B", "Retail / Tiendas", "Online / Directo"]:
-                if ch.lower() in q or active_filters.get("channel") == ch:
+            # Channel mapping
+            channel_map = {
+                "mayorista": "Wholesale / B2B",
+                "wholesale": "Wholesale / B2B",
+                "retail": "Retail / Stores",
+                "tiendas": "Retail / Stores",
+                "stores": "Retail / Stores",
+                "online": "Online / Direct",
+                "directo": "Online / Direct",
+                "direct": "Online / Direct"
+            }
+            for ch_k, ch_norm in channel_map.items():
+                if ch_k in q or active_filters.get("channel", "").lower() == ch_k:
                     if "channel" in filtered_df.columns:
-                        filtered_df = filtered_df[filtered_df["channel"] == ch]
-                        applied_desc.append(f"Canal = '{ch}'")
+                        mask = filtered_df["channel"].astype(str).str.lower().str.contains(ch_k)
+                        filtered_df = filtered_df[mask]
+                        applied_desc.append(f"Channel = '{ch_norm}'")
+                    break
 
             # Calculate real net sales and orders
             total_net = float(filtered_df["net_sales"].sum()) if "net_sales" in filtered_df.columns else 0.0
             total_orders = int(len(filtered_df))
-            filter_str = ", ".join(applied_desc) if applied_desc else "Sin filtros específicos"
+            filter_str = ", ".join(applied_desc) if applied_desc else "No specific filters"
 
             citations = [
                 ProvenanceCitation(
@@ -124,7 +161,7 @@ class ConversationalAssistantAgent(BaseAgent):
                     source_name="analytical_fact",
                     filter_or_condition=filter_str,
                     result_id="RECALC_ON_DEMAND",
-                    details=f"Cálculo directo sobre el dataset analítico preparado ({len(filtered_df)} filas coincidentes)."
+                    details=f"Direct calculation on prepared analytical dataset ({len(filtered_df)} matching rows)."
                 )
             ]
 
@@ -132,11 +169,11 @@ class ConversationalAssistantAgent(BaseAgent):
                 schema_version="1.0",
                 query_type="recalculate_with_filters",
                 answer_text=(
-                    f"Bajo las condiciones aplicadas ({filter_str}), la facturación neta acumulada en el período cerrado "
-                    f"(enero a mayo 2026) es de ${total_net:,.2f} en un total de {total_orders} pedidos completados."
+                    f"Under the applied conditions ({filter_str}), accrued net sales across the closed period "
+                    f"(January to May 2026) total ${total_net:,.2f} across {total_orders} completed orders."
                 ),
                 citations=citations,
-                calculation_summary=f"Filtros: {filter_str} | Filas evaluadas: {len(filtered_df)} | Total: ${total_net:,.2f}",
+                calculation_summary=f"Filters: {filter_str} | Evaluated rows: {len(filtered_df)} | Total: ${total_net:,.2f}",
                 requires_full_pipeline=False,
                 is_demo_mode=is_demo
             )
@@ -171,13 +208,13 @@ class ConversationalAssistantAgent(BaseAgent):
                         source_name=results[0].step_id,
                         filter_or_condition="orders_valid_dates WHERE status = 'COMPLETED'",
                         result_id=results[0].result_id,
-                        details="Procedencia auditada de la base analítica."
+                        details="Audited provenance from analytical baseline."
                     ))
                 llm_ans.citations = valid_citations
                 llm_ans.is_demo_mode = False
                 return llm_ans
             except Exception as e:
-                print(f"[ConversationalAssistantAgent] Fallback activado tras error en LLM: {e}")
+                print(f"[ConversationalAssistantAgent] Fallback activated after LLM error: {e}")
 
         # Deterministic fallback response
         res_comp = res_map.get("RES_OP_03_PERIOD_COMPARISON")
@@ -190,7 +227,7 @@ class ConversationalAssistantAgent(BaseAgent):
                 source_name="RES_OP_03_PERIOD_COMPARISON",
                 filter_or_condition="orders_valid_dates WHERE status = 'COMPLETED' AND date IN (2026-03, 2026-05)",
                 result_id=res_comp.result_id,
-                details="Comparación período contra período pico (marzo) vs mes cerrado más reciente (mayo)."
+                details="Period-over-period comparison between peak (March) and most recent closed month (May)."
             ))
         if res_channel:
             citations.append(ProvenanceCitation(
@@ -198,20 +235,20 @@ class ConversationalAssistantAgent(BaseAgent):
                 source_name="RES_OP_04_DIMENSION_BREAKDOWN_CHANNEL",
                 filter_or_condition="orders_valid_dates GROUP BY channel",
                 result_id=res_channel.result_id,
-                details="Descomposición aditiva de variación por canal con reconciliación al 100%."
+                details="Additive variance decomposition by channel with 100% reconciliation."
             ))
 
-        executive = insight_report.executive_summary if insight_report else "Variación observada en el período analizado."
-        mayorista_finding = next((f for f in insight_report.observed_findings if "Mayorista" in f.claim), None) if insight_report else None
-        detail_msg = mayorista_finding.claim if mayorista_finding else "La mayor parte de la disminución se atribuye a canales corporativos."
+        executive = insight_report.executive_summary if insight_report else "Observed variance over the analyzed period."
+        wholesale_finding = next((f for f in insight_report.observed_findings if "Wholesale" in f.claim or "Mayorista" in f.claim), None) if insight_report else None
+        detail_msg = wholesale_finding.claim if wholesale_finding else "The majority of the decline is attributed to corporate channels."
 
         answer_text = (
-            f"Basado en los resultados auditados y validados del proyecto:\n\n"
-            f"1. **Hallazgo principal**: {executive}\n\n"
-            f"2. **Concentración por canal**: {detail_msg}\n\n"
-            f"3. **Garantía metodológica**: Esta conclusión no proviene de una correlación informal, "
-            f"sino de una descomposición aditiva verificada donde la suma de las variaciones por canal iguala exactamente "
-            f"el 100% de la variación total observada de la empresa."
+            f"Based on the audited and validated project results:\n\n"
+            f"1. **Primary finding**: {executive}\n\n"
+            f"2. **Channel concentration**: {detail_msg}\n\n"
+            f"3. **Methodological assurance**: This conclusion does not stem from an informal correlation, "
+            f"but from a verified additive decomposition where the sum of channel variances exactly equals "
+            f"100% of the total company decline."
         )
 
         return ChatAnswer(
@@ -219,7 +256,7 @@ class ConversationalAssistantAgent(BaseAgent):
             query_type="explain_existing_result",
             answer_text=answer_text,
             citations=citations,
-            calculation_summary="Procedencia: orders.csv (filtrado status='COMPLETED') -> unión segura con customers.csv -> reconciliación dimensional exacta.",
+            calculation_summary="Provenance: orders.csv (filtered status='COMPLETED') -> safe join with customers.csv -> exact dimensional reconciliation.",
             requires_full_pipeline=False,
             is_demo_mode=True
         )

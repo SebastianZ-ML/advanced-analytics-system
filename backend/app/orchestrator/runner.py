@@ -59,7 +59,7 @@ class PipelineRunner:
         self,
         project_id: str,
         run_id: str,
-        objective_question: str = "Las ventas bajaron durante los últimos meses. Quiero entender dónde se concentra la caída, qué factores observables la explican y qué acciones conviene investigar.",
+        objective_question: str = "Sales declined over recent months. I want to understand where the drop is concentrated, what observable factors explain it, and what actions should be investigated.",
         user_clarifications: Optional[Dict[str, str]] = None,
         force_error_for_test: bool = False
     ) -> Dict[str, Any]:
@@ -67,13 +67,13 @@ class PipelineRunner:
         Executes end-to-end analytical workflow.
         """
         curr_stage = PipelineStage.UPLOADED
-        DatabaseService.log_event(run_id=run_id, stage="INIT", level="INFO", message="Iniciando ejecución de pipeline analítico.")
+        DatabaseService.log_event(run_id=run_id, stage="INIT", level="INFO", message="Starting analytical pipeline execution.")
 
         try:
             # 1. Load project files from disk
             files_info = DatabaseService.get_project_files(project_id)
             if not files_info:
-                raise ValueError(f"No hay archivos registrados para el proyecto {project_id}.")
+                raise ValueError(f"No files registered for project {project_id}.")
 
             loaded_tables: Dict[str, pd.DataFrame] = {}
             file_meta: Dict[str, Dict[str, str]] = {}
@@ -91,7 +91,7 @@ class PipelineRunner:
                 }
 
             # 2. Audit & Profile
-            curr_stage = self._transition(run_id, curr_stage, PipelineStage.PROFILED, "Agente Auditor: Perfilado de tablas y detección de anomalías.")
+            curr_stage = self._transition(run_id, curr_stage, PipelineStage.PROFILED, "Auditor Agent: Table profiling and anomaly detection.")
             catalog, dq_report, relationships = self.auditor.audit_project_tables(
                 project_id=project_id,
                 loaded_tables=loaded_tables,
@@ -113,13 +113,13 @@ class PipelineRunner:
             # Check if clarification is needed
             unresolved = [a for a in objective.pending_ambiguities if a.status != "resolved"]
             if unresolved and not user_clarifications:
-                curr_stage = self._transition(run_id, curr_stage, PipelineStage.NEEDS_CLARIFICATION, "Se requiere confirmación de supuestos antes de proceder al plan.")
+                curr_stage = self._transition(run_id, curr_stage, PipelineStage.NEEDS_CLARIFICATION, "Assumption confirmation required before proceeding with plan.")
                 # We can pause here or proceed if defaults are accepted
                 # For demo vertical run, if user provided clarifications or default mode, we proceed
                 pass
 
             # 4. Methodologist Plan
-            curr_stage = self._transition(run_id, curr_stage, PipelineStage.PLAN_READY, "Agente Metodólogo: Elaboración del plan analítico registrado.")
+            curr_stage = self._transition(run_id, curr_stage, PipelineStage.PLAN_READY, "Methodologist Agent: Registered analytical plan formulation.")
             plan = self.methodologist.build_plan(
                 project_id=project_id,
                 run_id=run_id,
@@ -131,7 +131,7 @@ class PipelineRunner:
             DatabaseService.save_artifact(f"PLAN_{run_id}", run_id, "AnalysisPlan", plan.model_dump())
 
             # 5. Data Preparation
-            curr_stage = self._transition(run_id, curr_stage, PipelineStage.PREPARING, "Agente Preparador: Limpieza, deduplicación y uniones controladas.")
+            curr_stage = self._transition(run_id, curr_stage, PipelineStage.PREPARING, "Data Preparer Agent: Cleaning, deduplication, and controlled joins.")
             analytical_df, transformations = self.preparer.prepare_data(
                 tables=loaded_tables,
                 relationships=relationships,
@@ -141,7 +141,7 @@ class PipelineRunner:
             DatabaseService.save_artifact(f"TRF_{run_id}", run_id, "TransformationRecords", [t.model_dump() for t in transformations])
 
             # 6. Analytical Execution
-            curr_stage = self._transition(run_id, curr_stage, PipelineStage.ANALYZING, "Agente Ejecutor: Cálculo de métricas, descomposiciones y dinámicas.")
+            curr_stage = self._transition(run_id, curr_stage, PipelineStage.ANALYZING, "Analytical Executor Agent: Metric calculation, decompositions, and dynamics.")
             results = self.executor.execute_plan(analytical_df=analytical_df, plan=plan)
 
             # Test injection: force non-finite number or reconciliation error to verify repair loop
@@ -151,7 +151,7 @@ class PipelineRunner:
             DatabaseService.save_artifact(f"RES_{run_id}", run_id, "AnalysisResults", [r.model_dump() for r in results])
 
             # 7. Independent Validation with Repair Loop
-            curr_stage = self._transition(run_id, curr_stage, PipelineStage.VALIDATING, "Agente Validador: Comprobación determinista de reconciliación y finitud.")
+            curr_stage = self._transition(run_id, curr_stage, PipelineStage.VALIDATING, "Analytical Validator Agent: Deterministic reconciliation and finite value audit.")
             repair_attempt = 0
             validation_report = self.validator.validate_results(
                 run_id=run_id,
@@ -163,7 +163,7 @@ class PipelineRunner:
             # Repair cycle if rejected and can retry
             while validation_report.overall_status == "rejected" and validation_report.can_retry and repair_attempt < 2:
                 repair_attempt = DatabaseService.increment_repair_attempt(run_id)
-                curr_stage = self._transition(run_id, curr_stage, PipelineStage.NEEDS_REPAIR, f"Intento de reparación automática {repair_attempt}: {validation_report.repair_instruction}")
+                curr_stage = self._transition(run_id, curr_stage, PipelineStage.NEEDS_REPAIR, f"Automated repair attempt {repair_attempt}: {validation_report.repair_instruction}")
 
                 # Auto-repair actions
                 if force_error_for_test:
@@ -172,8 +172,8 @@ class PipelineRunner:
                     force_error_for_test = False
 
                 # Re-validate
-                curr_stage = self._transition(run_id, curr_stage, PipelineStage.ANALYZING, "Re-ejecución tras reparación.")
-                curr_stage = self._transition(run_id, curr_stage, PipelineStage.VALIDATING, "Re-validación independiente de resultados.")
+                curr_stage = self._transition(run_id, curr_stage, PipelineStage.ANALYZING, "Re-execution following automated repair.")
+                curr_stage = self._transition(run_id, curr_stage, PipelineStage.VALIDATING, "Independent re-validation of results.")
                 validation_report = self.validator.validate_results(
                     run_id=run_id,
                     results=results,
@@ -184,11 +184,11 @@ class PipelineRunner:
             DatabaseService.save_artifact(f"VAL_{run_id}", run_id, "ValidationReport", validation_report.model_dump())
 
             if validation_report.overall_status == "rejected":
-                fail_msg = f"Validación rechazada tras {repair_attempt} intentos. Errores: {', '.join(validation_report.failed_results)}"
+                fail_msg = f"Validation rejected after {repair_attempt} attempts. Failed checks: {', '.join(validation_report.failed_results)}"
                 DatabaseService.update_run_stage(run_id, PipelineStage.FAILED.value, status="FAILED", failure_reason=fail_msg)
                 return {"status": "FAILED", "reason": fail_msg, "validation_report": validation_report.model_dump()}
 
-            curr_stage = self._transition(run_id, curr_stage, PipelineStage.VALIDATED, f"Resultados aprobados con estado: {validation_report.overall_status}.")
+            curr_stage = self._transition(run_id, curr_stage, PipelineStage.VALIDATED, f"Results approved with status: {validation_report.overall_status}.")
 
             # 8. Interpretation
             insight_report = self.interpreter.interpret_results(
@@ -200,7 +200,7 @@ class PipelineRunner:
             DatabaseService.save_artifact(f"INS_{run_id}", run_id, "InsightReport", insight_report.model_dump())
 
             # 9. Dashboard Building
-            curr_stage = self._transition(run_id, curr_stage, PipelineStage.BUILDING_DASHBOARD, "Agente Constructor: Generando DashboardSpec con componentes aprobados.")
+            curr_stage = self._transition(run_id, curr_stage, PipelineStage.BUILDING_DASHBOARD, "Dashboard Builder Agent: Generating DashboardSpec from approved components.")
             dashboard_spec = self.dashboard_builder.build_dashboard(
                 run_id=run_id,
                 results=results,
@@ -218,7 +218,7 @@ class PipelineRunner:
             DatabaseService.save_artifact(f"DASH_{run_id}", run_id, "DashboardSpec", validated_dashboard.model_dump())
 
             # Final transition
-            curr_stage = self._transition(run_id, curr_stage, PipelineStage.READY, "Pipeline completado con éxito. Dashboard y asistente listos.")
+            curr_stage = self._transition(run_id, curr_stage, PipelineStage.READY, "Pipeline successfully completed. Dashboard and assistant ready.")
 
             return {
                 "status": "READY",
@@ -231,5 +231,5 @@ class PipelineRunner:
 
         except Exception as e:
             DatabaseService.update_run_stage(run_id, PipelineStage.FAILED.value, status="FAILED", failure_reason=str(e))
-            DatabaseService.log_event(run_id, "ERROR", "ERROR", f"Fallo catastrófico en pipeline: {str(e)}")
+            DatabaseService.log_event(run_id, "ERROR", "ERROR", f"Catastrophic failure in pipeline: {str(e)}")
             raise

@@ -12,7 +12,7 @@ from app.engine.duckdb_engine import DuckDBAnalyticsEngine
 
 class DataAuditorAgent(BaseAgent):
     def __init__(self):
-        super().__init__(name="Agente Auditor de Datos", role="Inventario, perfilado de tipos, auditoría de calidad y validación de relaciones")
+        super().__init__(name="Data Auditor Agent", role="Table inventory, schema profiling, quality anomaly detection, and relationship evaluation")
 
     def audit_project_tables(
         self,

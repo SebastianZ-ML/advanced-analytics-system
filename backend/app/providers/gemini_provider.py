@@ -45,7 +45,7 @@ class GeminiProvider(LLMProvider):
         self._max_retries = max_retries if max_retries is not None else settings.gemini_max_retries
 
         if not self._api_key:
-            raise LLMAuthenticationError("GEMINI_API_KEY no está configurada.")
+            raise LLMAuthenticationError("GEMINI_API_KEY is not configured.")
 
         self._client = genai.Client(api_key=self._api_key)
 
@@ -99,7 +99,7 @@ class GeminiProvider(LLMProvider):
                 duration_ms = int((time.time() - start_time) * 1000)
                 text = response.text or ""
                 if not text.strip():
-                    raise LLMProviderError("Respuesta vacía recibida de Gemini.")
+                    raise LLMProviderError("Empty response received from Gemini.")
 
                 # Audit log success (no secrets)
                 input_toks = getattr(response.usage_metadata, "prompt_token_count", 0) if hasattr(response, "usage_metadata") else 0
@@ -149,8 +149,8 @@ class GeminiProvider(LLMProvider):
         )
 
         if "timeout" in str(last_exception).lower():
-            raise LLMTimeoutError(f"Tiempo de espera agotado al conectar con Gemini: {sanitized_err}") from last_exception
-        raise LLMProviderError(f"Fallo en llamada a Gemini ({sanitized_err})") from last_exception
+            raise LLMTimeoutError(f"Timeout connecting to Gemini: {sanitized_err}") from last_exception
+        raise LLMProviderError(f"Gemini API call failed ({sanitized_err})") from last_exception
 
     # -----------------------------------------------------------------------
     # 1. Structure Objective
@@ -164,21 +164,21 @@ class GeminiProvider(LLMProvider):
     ) -> ObjectiveSpec:
         clarifications = user_clarifications or {}
         system_instruction = ContextBuilder.get_security_instruction() + "\n" + (
-            "Tu tarea es actuar como Agente Organizador y estructurar la pregunta del usuario en un ObjectiveSpec. "
-            "Debes seleccionar únicamente métricas y dimensiones que existan en las tablas del catálogo. "
-            "Si la pregunta es ambigua respecto a 'ventas', propone una pregunta de aclaración o un supuesto editable."
+            "Your task is to act as the Organizer Agent and structure the user business question into an ObjectiveSpec. "
+            "You must select strictly metrics and dimensions that exist in the catalog tables. "
+            "If the question is ambiguous regarding 'sales', propose a clarification question or an editable assumption."
         )
 
         prompt = f"""
-Pregunta del usuario: "{user_question}"
+User Question: "{user_question}"
 
-Aclaraciones del usuario previamente registradas:
+Previously Recorded User Clarifications:
 {json.dumps(clarifications, ensure_ascii=False)}
 
-Resumen del catálogo de tablas disponibles:
+Catalog Summary of Available Tables:
 {json.dumps(catalog_summary, ensure_ascii=False, indent=2)}
 
-Genera un JSON conforme al contrato ObjectiveSpec.
+Generate a JSON conforming to the ObjectiveSpec contract.
 """
         raw_json = self._execute_with_retry(
             prompt=prompt,
@@ -193,7 +193,7 @@ Genera un JSON conforme al contrato ObjectiveSpec.
             spec = ObjectiveSpec.model_validate_json(raw_json)
         except Exception as e:
             # Single structural repair attempt
-            repair_prompt = f"El JSON anterior falló la validación con error: {str(e)}. Corrige el JSON para que coincida exactamente con ObjectiveSpec."
+            repair_prompt = f"The previous JSON failed validation with error: {str(e)}. Correct the JSON to match ObjectiveSpec exactly."
             raw_json_repaired = self._execute_with_retry(
                 prompt=repair_prompt,
                 system_instruction=system_instruction,
@@ -216,7 +216,7 @@ Genera un JSON conforme al contrato ObjectiveSpec.
         for dim in spec.relevant_dimensions:
             dim_clean = dim.split(".")[-1].strip().lower()
             if dim_clean not in [c.lower() for c in all_catalog_cols]:
-                raise LLMValidationError(f"El modelo propuso una dimensión inexistente en los datos cargados: '{dim}'")
+                raise LLMValidationError(f"The model proposed a non-existent dimension in the loaded data: '{dim}'")
 
         return spec
 
@@ -230,16 +230,16 @@ Genera un JSON conforme al contrato ObjectiveSpec.
         catalog_summary: Dict[str, Any]
     ) -> List[AmbiguityItem]:
         system_instruction = ContextBuilder.get_security_instruction() + "\n" + (
-            "Identifica si existen ambigüedades de alto impacto en la pregunta (por ejemplo, definir 'ventas' como "
-            "facturación neta vs facturación bruta, o cómo tratar períodos incompletos). "
-            "Genera como máximo 2 preguntas de aclaración con opciones y un valor por defecto."
+            "Identify if high-impact ambiguities exist in the question (for example, defining 'sales' as "
+            "net sales vs gross sales, or how to treat incomplete periods). "
+            "Generate at most 2 clarification questions with selectable options and a default value."
         )
 
         prompt = f"""
-Pregunta del usuario: "{user_question}"
-Catálogo: {json.dumps(catalog_summary, ensure_ascii=False)}
+User Question: "{user_question}"
+Catalog: {json.dumps(catalog_summary, ensure_ascii=False)}
 
-Devuelve una lista de AmbiguityItem en formato JSON.
+Return a list of AmbiguityItem in JSON format.
 """
         raw_json = self._execute_with_retry(
             prompt=prompt,
@@ -258,7 +258,7 @@ Devuelve una lista de AmbiguityItem en formato JSON.
                 items = [data]
             return [AmbiguityItem.model_validate(it) for it in items]
         except Exception as e:
-            raise LLMValidationError(f"No se pudieron deserializar las preguntas de aclaración: {e}")
+            raise LLMValidationError(f"Could not deserialize clarification questions: {e}")
 
     # -----------------------------------------------------------------------
     # 3. Propose Analysis Plan
@@ -274,23 +274,23 @@ Devuelve una lista de AmbiguityItem en formato JSON.
         registered_methods: List[Dict[str, Any]]
     ) -> AnalysisPlan:
         system_instruction = ContextBuilder.get_security_instruction() + "\n" + (
-            "Tu tarea es seleccionar operaciones del catálogo analítico registrado para conformar un AnalysisPlan. "
-            "NO inventes operaciones, librerías, código SQL ni código Python. "
-            "Usa estrictamente los step_id y parámetros descritos en el catálogo de métodos implementados."
+            "Your task is to select operations from the registered analytical catalog to form an AnalysisPlan. "
+            "Do NOT invent operations, libraries, SQL code, or Python code. "
+            "Strictly use the step_id and parameters described in the catalog of implemented methods."
         )
 
         prompt = f"""
-Objetivo Operativo: {objective.operational_objective}
-Métrica Principal: {objective.primary_metric}
-Dimensiones: {objective.relevant_dimensions}
+Operational Objective: {objective.operational_objective}
+Primary Metric: {objective.primary_metric}
+Dimensions: {objective.relevant_dimensions}
 
-Problemas de Calidad Identificados:
+Identified Quality Issues:
 {json.dumps(dq_summary, ensure_ascii=False)}
 
-Catálogo de Métodos Implementados:
+Catalog of Implemented Methods:
 {json.dumps(registered_methods, ensure_ascii=False, indent=2)}
 
-Genera un JSON conforme a AnalysisPlan utilizando únicamente las operaciones anteriores.
+Generate a JSON conforming to AnalysisPlan using strictly the operations above.
 """
         raw_json = self._execute_with_retry(
             prompt=prompt,
@@ -305,7 +305,7 @@ Genera un JSON conforme a AnalysisPlan utilizando únicamente las operaciones an
         try:
             plan = AnalysisPlan.model_validate_json(raw_json)
         except Exception as e:
-            repair_prompt = f"El plan anterior falló la validación con error: {str(e)}. Corrige el JSON para cumplir el contrato AnalysisPlan."
+            repair_prompt = f"The previous plan failed validation with error: {str(e)}. Correct the JSON to fulfill the AnalysisPlan contract."
             raw_json_repaired = self._execute_with_retry(
                 prompt=repair_prompt,
                 system_instruction=system_instruction,
@@ -320,7 +320,7 @@ Genera un JSON conforme a AnalysisPlan utilizando únicamente las operaciones an
         registered_categories = {m["category"] for m in registered_methods}
         for op in plan.operations:
             if op.category not in registered_categories:
-                raise LLMValidationError(f"El modelo intentó incluir una operación no registrada: '{op.category}'")
+                raise LLMValidationError(f"The model attempted to include an unregistered operation: '{op.category}'")
 
         return plan
 
@@ -336,27 +336,27 @@ Genera un JSON conforme a AnalysisPlan utilizando únicamente las operaciones an
         provenance_summary: List[str]
     ) -> InsightReport:
         system_instruction = ContextBuilder.get_security_instruction() + "\n" + (
-            "Tu tarea es redactar el InsightReport a partir de resultados validados y aprobados. "
-            "REGLAS OBLIGATORIAS: "
-            "1. Toda afirmación cuantitativa debe enlazar a un 'result_id' real de los resultados entregados. "
-            "2. Separa hechos empíricamente probados de interpretaciones, hipótesis y recomendaciones. "
-            "3. Las recomendaciones deben tener 'is_action_proposal_only=True' y no presentarse como causas demostradas. "
-            "4. Conserva visibles las limitaciones metodológicas."
+            "Your task is to draft the InsightReport from validated and approved results. "
+            "MANDATORY RULES: "
+            "1. Every quantitative claim must link to a real 'result_id' from the provided results. "
+            "2. Separate empirically proven facts from interpretations, hypotheses, and recommendations. "
+            "3. Recommendations must have 'is_action_proposal_only=True' and must not be presented as proven causes. "
+            "4. Keep methodological limitations clearly visible."
         )
 
         results_summary = ContextBuilder.build_results_summary(approved_results)
         approved_ids = {r.result_id for r in approved_results}
 
         prompt = f"""
-Objetivo del análisis: {objective.operational_objective}
+Analysis Objective: {objective.operational_objective}
 
-Resultados Aprobados y Validados:
+Approved and Validated Results:
 {json.dumps(results_summary, ensure_ascii=False, indent=2)}
 
-Limitaciones Conocidas:
+Known Limitations:
 {json.dumps(limitations, ensure_ascii=False)}
 
-Genera un JSON conforme a InsightReport.
+Generate a JSON conforming to InsightReport.
 """
         raw_json = self._execute_with_retry(
             prompt=prompt,
@@ -370,7 +370,7 @@ Genera un JSON conforme a InsightReport.
         try:
             report = InsightReport.model_validate_json(raw_json)
         except Exception as e:
-            repair_prompt = f"El informe falló la validación con error: {str(e)}. Corrige el JSON conforme al contrato InsightReport."
+            repair_prompt = f"The report failed validation with error: {str(e)}. Correct the JSON conforming to the InsightReport contract."
             raw_json_repaired = self._execute_with_retry(
                 prompt=repair_prompt,
                 system_instruction=system_instruction,
@@ -383,7 +383,7 @@ Genera un JSON conforme a InsightReport.
         # Semantic check: Verify every finding cites a valid approved result_id
         for finding in report.observed_findings:
             if finding.result_id not in approved_ids:
-                raise LLMValidationError(f"El hallazgo '{finding.id}' cita un result_id inexistente o no aprobado: '{finding.result_id}'")
+                raise LLMValidationError(f"Finding '{finding.id}' cites a non-existent or unapproved result_id: '{finding.result_id}'")
 
         # Enforce is_action_proposal_only on all actions
         for act in report.recommended_actions:
@@ -406,27 +406,27 @@ Genera un JSON conforme a InsightReport.
         active_filters: Dict[str, Any]
     ) -> ChatAnswer:
         system_instruction = ContextBuilder.get_security_instruction() + "\n" + (
-            "Clasifica la consulta del usuario en una de 4 categorías: "
-            "'explain_existing_result', 'recalculate_with_filters', 'request_new_analysis', o 'unanswerable_by_data'. "
-            "Si la pregunta indaga por información ausente (competencia, factores externos), clasifícala como 'unanswerable_by_data' y explica qué falta. "
-            "Si solicita un cálculo con filtros o una explicación, fundamenta con citas internas de procedencia. "
-            "NO inventes cifras numéricas no presentes en los resultados."
+            "Classify the user inquiry into one of 4 categories: "
+            "'explain_existing_result', 'recalculate_with_filters', 'request_new_analysis', or 'unanswerable_by_data'. "
+            "If the question inquires about absent information (competitors, external factors), classify it as 'unanswerable_by_data' and explain what is missing. "
+            "If it requests a calculation with filters or an explanation, support it with internal provenance citations. "
+            "Do NOT invent numeric figures not present in the results."
         )
 
         results_summary = ContextBuilder.build_results_summary(approved_results)
         approved_ids = [r.result_id for r in approved_results]
 
         prompt = f"""
-Pregunta del usuario: "{question}"
-Filtros activos en interfaz: {json.dumps(active_filters, ensure_ascii=False)}
+User Question: "{question}"
+Active Interface Filters: {json.dumps(active_filters, ensure_ascii=False)}
 
-Objetivo: {objective.operational_objective}
-Resultados Validados: {json.dumps(results_summary, ensure_ascii=False)}
-Resumen Ejecutivo: {insight_report.executive_summary if insight_report else 'No disponible'}
-Limitaciones: {json.dumps(insight_report.data_limitations if insight_report else [], ensure_ascii=False)}
-Tablas disponibles: {list(catalog_summary.keys())}
+Objective: {objective.operational_objective}
+Validated Results: {json.dumps(results_summary, ensure_ascii=False)}
+Executive Summary: {insight_report.executive_summary if insight_report else 'Not available'}
+Limitations: {json.dumps(insight_report.data_limitations if insight_report else [], ensure_ascii=False)}
+Available Tables: {list(catalog_summary.keys())}
 
-Genera un JSON conforme al contrato ChatAnswer.
+Generate a JSON conforming to the ChatAnswer contract.
 """
         raw_json = self._execute_with_retry(
             prompt=prompt,
@@ -443,4 +443,4 @@ Genera un JSON conforme al contrato ChatAnswer.
             ans.is_demo_mode = False
             return ans
         except Exception as e:
-            raise LLMValidationError(f"Error deserializando respuesta del asistente: {e}")
+            raise LLMValidationError(f"Error deserializing assistant answer: {e}")

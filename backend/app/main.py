@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.app_name,
     version="1.0.0",
-    description="Sistema multiagente de analítica avanzada y adaptativa",
+    description="Adaptive Multi-Agent Advanced Analytics Platform",
     lifespan=lifespan
 )
 

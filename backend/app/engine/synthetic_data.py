@@ -25,10 +25,10 @@ def generate_demo_dataset(target_dir: Path, seed: int = 42) -> dict:
 
     # 1. Campaigns
     campaigns_data = [
-        {"campaign_id": "CMP-01", "campaign_name": "Lanzamiento Verano", "start_date": "2026-01-05", "end_date": "2026-02-15", "budget": 15000.0},
-        {"campaign_id": "CMP-02", "campaign_name": "Retorno Escolar", "start_date": "2026-02-20", "end_date": "2026-03-25", "budget": 22000.0},
-        {"campaign_id": "CMP-03", "campaign_name": "Renovación Industrial B2B", "start_date": "2026-03-01", "end_date": "2026-04-10", "budget": 30000.0},
-        {"campaign_id": "CMP-04", "campaign_name": "Cyber Otoño", "start_date": "2026-05-01", "end_date": "2026-05-20", "budget": 18000.0},
+        {"campaign_id": "CMP-01", "campaign_name": "Summer Launch", "start_date": "2026-01-05", "end_date": "2026-02-15", "budget": 15000.0},
+        {"campaign_id": "CMP-02", "campaign_name": "Back to School", "start_date": "2026-02-20", "end_date": "2026-03-25", "budget": 22000.0},
+        {"campaign_id": "CMP-03", "campaign_name": "B2B Industrial Renewal", "start_date": "2026-03-01", "end_date": "2026-04-10", "budget": 30000.0},
+        {"campaign_id": "CMP-04", "campaign_name": "Autumn Cyber", "start_date": "2026-05-01", "end_date": "2026-05-20", "budget": 18000.0},
     ]
     df_campaigns = pd.DataFrame(campaigns_data)
     campaigns_path = target_dir / "campaigns.csv"
@@ -36,22 +36,22 @@ def generate_demo_dataset(target_dir: Path, seed: int = 42) -> dict:
 
     # 2. Categories & Products (Excel with 2 sheets)
     categories_data = [
-        {"category_id": "CAT_TECH", "category_name": "Tecnología y Equipamiento", "department": "Hardware"},
-        {"category_id": "CAT_OFFICE", "category_name": "Suministros de Oficina", "department": "Consumibles"},
-        {"category_id": "CAT_FURN", "category_name": "Mobiliario Ergonómico", "department": "Infraestructura"},
-        {"category_id": "CAT_SERV", "category_name": "Servicios y Licencias", "department": "Software"},
+        {"category_id": "CAT_TECH", "category_name": "Technology & Equipment", "department": "Hardware"},
+        {"category_id": "CAT_OFFICE", "category_name": "Office Supplies", "department": "Consumibles"},
+        {"category_id": "CAT_FURN", "category_name": "Ergonomic Furniture", "department": "Infraestructura"},
+        {"category_id": "CAT_SERV", "category_name": "Services & Licenses", "department": "Software"},
     ]
     df_categories = pd.DataFrame(categories_data)
 
     products_data = [
-        {"product_id": "PROD_001", "product_name": "Servidor Rack Enterprise", "category_id": "CAT_TECH", "cost_price": 3200.0, "base_price": 4500.0},
-        {"product_id": "PROD_002", "product_name": "Workstation Profesional", "category_id": "CAT_TECH", "cost_price": 1400.0, "base_price": 2100.0},
-        {"product_id": "PROD_003", "product_name": "Pantalla Ultrawide 4K", "category_id": "CAT_TECH", "cost_price": 450.0, "base_price": 750.0},
-        {"product_id": "PROD_004", "product_name": "Silla Ergonómica Pro", "category_id": "CAT_FURN", "cost_price": 210.0, "base_price": 380.0},
-        {"product_id": "PROD_005", "product_name": "Escritorio Elevable Motor", "category_id": "CAT_FURN", "cost_price": 390.0, "base_price": 650.0},
-        {"product_id": "PROD_006", "product_name": "Pack Papelería Corporativa", "category_id": "CAT_OFFICE", "cost_price": 25.0, "base_price": 55.0},
-        {"product_id": "PROD_007", "product_name": "Tóner Láser Alta Capacidad", "category_id": "CAT_OFFICE", "cost_price": 60.0, "base_price": 120.0},
-        {"product_id": "PROD_008", "product_name": "Suscripción Cloud Anual", "category_id": "CAT_SERV", "cost_price": 800.0, "base_price": 1400.0},
+        {"product_id": "PROD_001", "product_name": "Enterprise Rack Server", "category_id": "CAT_TECH", "cost_price": 3200.0, "base_price": 4500.0},
+        {"product_id": "PROD_002", "product_name": "Professional Workstation", "category_id": "CAT_TECH", "cost_price": 1400.0, "base_price": 2100.0},
+        {"product_id": "PROD_003", "product_name": "Ultrawide 4K Monitor", "category_id": "CAT_TECH", "cost_price": 450.0, "base_price": 750.0},
+        {"product_id": "PROD_004", "product_name": "Ergonomic Pro Chair", "category_id": "CAT_FURN", "cost_price": 210.0, "base_price": 380.0},
+        {"product_id": "PROD_005", "product_name": "Motorized Standing Desk", "category_id": "CAT_FURN", "cost_price": 390.0, "base_price": 650.0},
+        {"product_id": "PROD_006", "product_name": "Corporate Stationery Pack", "category_id": "CAT_OFFICE", "cost_price": 25.0, "base_price": 55.0},
+        {"product_id": "PROD_007", "product_name": "High-Capacity Laser Toner", "category_id": "CAT_OFFICE", "cost_price": 60.0, "base_price": 120.0},
+        {"product_id": "PROD_008", "product_name": "Annual Cloud Subscription", "category_id": "CAT_SERV", "cost_price": 800.0, "base_price": 1400.0},
     ]
     df_products = pd.DataFrame(products_data)
 
@@ -62,8 +62,8 @@ def generate_demo_dataset(target_dir: Path, seed: int = 42) -> dict:
 
     # 3. Customers
     # Preserve leading zeros! e.g. "00101"
-    regions = ["Metropolitana", "Norte", "Centro", "Sur"]
-    segments = ["Empresas B2B", "Retail Directo", "Institucional"]
+    regions = ["Metropolitan", "North", "Central", "South"]
+    segments = ["Corporate B2B", "Direct Retail", "Institutional"]
     customers_list = []
     num_customers = 80
 
@@ -71,7 +71,7 @@ def generate_demo_dataset(target_dir: Path, seed: int = 42) -> dict:
         cust_id = f"{i:05d}"  # 00001, 00002...
         customers_list.append({
             "customer_id": cust_id,
-            "customer_name": f"Cliente Corp {i}",
+            "customer_name": f"Corporate Client {i}",
             "segment": np.random.choice(segments, p=[0.4, 0.45, 0.15]),
             "region": np.random.choice(regions),
             "signup_date": (datetime(2025, 6, 1) + timedelta(days=int(np.random.randint(0, 240)))).strftime("%Y-%m-%d")
@@ -79,8 +79,8 @@ def generate_demo_dataset(target_dir: Path, seed: int = 42) -> dict:
 
     # INTENTIONAL ISSUE: Duplicate customer ID with differing address
     duplicate_cust = customers_list[14].copy()
-    duplicate_cust["customer_name"] = duplicate_cust["customer_name"] + " (Sucursal Secundaria)"
-    duplicate_cust["region"] = "Sur"
+    duplicate_cust["customer_name"] = duplicate_cust["customer_name"] + " (Secondary Branch)"
+    duplicate_cust["region"] = "South"
     customers_list.append(duplicate_cust)
 
     df_customers = pd.DataFrame(customers_list)
@@ -94,7 +94,7 @@ def generate_demo_dataset(target_dir: Path, seed: int = 42) -> dict:
     orders_list = []
     order_counter = 10000
 
-    channels = ["Mayorista / B2B", "Retail / Tiendas", "Online / Directo"]
+    channels = ["Wholesale / B2B", "Retail / Stores", "Online / Direct"]
     product_map = {p["product_id"]: p for p in products_data}
     valid_cust_ids = [c["customer_id"] for c in customers_list[:num_customers]]
 
@@ -125,7 +125,7 @@ def generate_demo_dataset(target_dir: Path, seed: int = 42) -> dict:
 
             channel = np.random.choice(channels, p=[0.45, 0.35, 0.20])
             # If in April or May and channel is Mayorista, suppress orders significantly
-            if curr.month in [4, 5] and channel == "Mayorista / B2B":
+            if curr.month in [4, 5] and channel == "Wholesale / B2B":
                 if np.random.rand() > 0.25:  # 75% dropped in Mayorista!
                     continue
 
@@ -140,7 +140,7 @@ def generate_demo_dataset(target_dir: Path, seed: int = 42) -> dict:
             prod = product_map[prod_id]
 
             # Units
-            if channel == "Mayorista / B2B":
+            if channel == "Wholesale / B2B":
                 units = int(np.random.randint(5, 25))
             else:
                 units = int(np.random.randint(1, 4))
@@ -193,7 +193,7 @@ def generate_demo_dataset(target_dir: Path, seed: int = 42) -> dict:
             "customer_id": "00999",  # Orphan customer!
             "product_id": "PROD_001",
             "campaign_id": None,
-            "channel": "Retail / Tiendas",
+            "channel": "Retail / Stores",
             "units": 2,
             "unit_price": 4500.0,
             "discount_amount": 0.0,
@@ -210,7 +210,7 @@ def generate_demo_dataset(target_dir: Path, seed: int = 42) -> dict:
             "customer_id": "00005",
             "product_id": "PROD_999",  # Orphan product!
             "campaign_id": None,
-            "channel": "Online / Directo",
+            "channel": "Online / Direct",
             "units": 1,
             "unit_price": 1000.0,
             "discount_amount": 0.0,
@@ -227,7 +227,7 @@ def generate_demo_dataset(target_dir: Path, seed: int = 42) -> dict:
         "customer_id": "00001",
         "product_id": "PROD_002",
         "campaign_id": None,
-        "channel": "Retail / Tiendas",
+        "channel": "Retail / Stores",
         "units": 1,
         "unit_price": 2100.0,
         "discount_amount": 0.0,
@@ -243,7 +243,7 @@ def generate_demo_dataset(target_dir: Path, seed: int = 42) -> dict:
         "customer_id": "00002",
         "product_id": "PROD_003",
         "campaign_id": None,
-        "channel": "Online / Directo",
+        "channel": "Online / Direct",
         "units": 1,
         "unit_price": 750.0,
         "discount_amount": 0.0,
@@ -304,7 +304,7 @@ def generate_demo_dataset(target_dir: Path, seed: int = 42) -> dict:
         "may_net_sales": float(sales_may),
         "drop_amount_mar_to_may": float(diff_total),
         "channel_change_mar_to_may": {k: float(v) for k, v in channel_diff.items()},
-        "primary_driver_channel": "Mayorista / B2B"
+        "primary_driver_channel": "Wholesale / B2B"
     }
 
     gt_path = target_dir / "ground_truth.json"

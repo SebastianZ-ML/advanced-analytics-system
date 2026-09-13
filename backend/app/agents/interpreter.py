@@ -1,5 +1,5 @@
 """
-Agent G: Interpreter (Agente Intérprete).
+Agent G: Interpreter.
 Produces structured insight reports from approved analytical results.
 Strictly separates observed empirical facts (linked to result_id) from
 interpretations, unproven hypotheses, and suggested action proposals.
@@ -21,7 +21,7 @@ from app.providers import LLMProvider, get_llm_provider
 
 class InterpreterAgent(BaseAgent):
     def __init__(self, override_provider: Optional[LLMProvider] = None):
-        super().__init__(name="Agente Intérprete", role="Interpretación rigurosa de resultados validados y formulación de hipótesis defensibles")
+        super().__init__(name="Interpreter Agent", role="Rigorous interpretation of validated results and defensible hypothesis formulation")
         self._override_provider = override_provider
 
     def interpret_results(
@@ -42,11 +42,11 @@ class InterpreterAgent(BaseAgent):
             objective = ObjectiveSpec(
                 schema_version="1.0",
                 project_id="P_DEFAULT",
-                original_question="Analizar variación de ventas",
-                operational_objective="Descomponer la variación observada en factores explicativos validados",
-                decision_to_inform="Priorizar canales para plan comercial",
+                original_question="Analyze sales variation",
+                operational_objective="Decompose observed variance into validated explanatory factors",
+                decision_to_inform="Prioritize commercial channel recovery plan",
                 primary_metric="net_sales",
-                time_period="2026-01 a 2026-05"
+                time_period="2026-01 to 2026-05"
             )
 
         # Strictly filter ONLY approved results
@@ -57,13 +57,13 @@ class InterpreterAgent(BaseAgent):
         approved_ids = {r.result_id for r in approved_results}
 
         limitations = [
-            "El mes de junio de 2026 contiene únicamente 4 días de registro y fue excluido del análisis comparativo temporal para evitar sesgo de falsa contracción.",
-            "No se dispone de datos exógenos de inventario (quiebres de stock) ni de tráfico web en la misma granularidad, por lo que no es posible atribuir causalidad externa de forma definitiva.",
-            "Se identificaron 8 órdenes con identificadores de cliente o producto huérfanos que fueron imputados como 'Sin clasificar' para no alterar los montos de venta devengados."
+            "The month of June 2026 contains only 4 days of recorded transactions and was excluded from temporal comparison to avoid false contraction bias.",
+            "No exogenous inventory (stockout) or web traffic data are available at this granularity, preventing definitive causal attribution.",
+            "Eight orders with orphan customer or product identifiers were classified as 'Unclassified' to avoid altering accrued sales totals."
         ]
         provenance = [
-            "Datos base: orders.csv, customers.csv, products.xlsx, campaigns.csv",
-            "Validación determinista: Reconciliación aditiva al 100% verificada"
+            "Source datasets: orders.csv, customers.csv, products.xlsx, campaigns.csv",
+            "Deterministic validation: 100% additive reconciliation verified"
         ]
 
         if not provider.is_deterministic_fallback and len(approved_results) > 0:
@@ -83,7 +83,7 @@ class InterpreterAgent(BaseAgent):
                         f.is_empirically_proven = True
                         verified_findings.append(f)
                     else:
-                        print(f"[InterpreterAgent] Hallazgo rechazado por citar result_id no aprobado: '{f.result_id}'")
+                        print(f"[InterpreterAgent] Finding rejected for citing unapproved result_id: '{f.result_id}'")
 
                 report.observed_findings = verified_findings
 
@@ -99,7 +99,7 @@ class InterpreterAgent(BaseAgent):
                 return report
 
             except Exception as e:
-                print(f"[InterpreterAgent] Fallback activado tras error en interpretación LLM: {e}")
+                print(f"[InterpreterAgent] Fallback activated after error in LLM interpretation: {e}")
 
         # Deterministic fallback
         return self._build_deterministic_report(run_id, approved_results, limitations)
@@ -125,61 +125,61 @@ class InterpreterAgent(BaseAgent):
 
             findings.append(InsightFinding(
                 id="FINDING_TOTAL_CONTRACTION",
-                claim=f"La facturación neta disminuyó en {abs(diff_abs):,.2f} unidades monetarias ({diff_pct:.1f}%) entre marzo 2026 ({base_sales:,.2f}) y mayo 2026 ({curr_sales:,.2f}).",
+                claim=f"Net sales decreased by {abs(diff_abs):,.2f} monetary units ({diff_pct:.1f}%) between March 2026 ({base_sales:,.2f}) and May 2026 ({curr_sales:,.2f}).",
                 result_id=res_comp.result_id,
                 metric_name="net_sales_delta",
                 observed_value=diff_abs,
                 is_empirically_proven=True,
-                evidence_text="Cálculo derivado de órdenes completadas cerradas en 2026-03 vs 2026-05."
+                evidence_text="Calculation derived from closed completed orders in 2026-03 vs 2026-05."
             ))
 
         res_channel = approved_map.get("RES_OP_04_DIMENSION_BREAKDOWN_CHANNEL")
         if res_channel:
             c = res_channel.calculated_values
             contribs = c.get("contributions", [])
-            mayorista = next((item for item in contribs if "Mayorista" in item["dimension_value"]), None)
-            if mayorista:
-                m_abs = mayorista["absolute_change"]
-                m_contrib = mayorista["contribution_to_total_change"]
+            wholesale = next((item for item in contribs if "Wholesale" in item["dimension_value"] or "Mayorista" in item["dimension_value"]), None)
+            if wholesale:
+                m_abs = wholesale["absolute_change"]
+                m_contrib = wholesale["contribution_to_total_change"]
                 findings.append(InsightFinding(
-                    id="FINDING_MAYORISTA_CONCENTRATION",
+                    id="FINDING_WHOLESALE_CONCENTRATION",
                     claim=(
-                        f"La caída observada se concentra de forma predominante en el canal 'Mayorista / B2B', "
-                        f"el cual explica {abs(m_abs):,.2f} unidades monetarias (el {m_contrib:.1f}% de la disminución total observada)."
+                        f"The observed decline is predominantly concentrated in the 'Wholesale / B2B' channel, "
+                        f"accounting for {abs(m_abs):,.2f} monetary units ({m_contrib:.1f}% of the total decline)."
                     ),
                     result_id=res_channel.result_id,
-                    metric_name="channel_contribution_mayorista",
+                    metric_name="channel_contribution_wholesale",
                     observed_value=m_abs,
                     is_empirically_proven=True,
-                    evidence_text="Descomposición aditiva mutuamente excluyente reconciliada al 100% con la variación total."
+                    evidence_text="Additive mutually exclusive decomposition reconciled 100% with total variation."
                 ))
 
                 interpretations.append(InsightInterpretation(
-                    id="INTERP_MAYORISTA_FOCUS",
+                    id="INTERP_WHOLESALE_FOCUS",
                     interpretation_text=(
-                        "La contracción general del negocio no es un fenómeno generalizado en todos los canales minoristas, "
-                        "sino un problema altamente focalizado en la cartera y frecuencia de compra de clientes mayoristas / corporativos."
+                        "The overall business contraction is not an across-the-board decline in all channels, "
+                        "but a highly concentrated contraction in wholesale / corporate customer repurchase volume."
                     ),
-                    grounded_in_finding_ids=["FINDING_TOTAL_CONTRACTION", "FINDING_MAYORISTA_CONCENTRATION"],
-                    confidence_rationale="Respaldado por una descomposición contable con reconciliación exacta.",
-                    distinction_from_causality="Esta concentración descriptiva identifica contablemente dónde ocurrió la pérdida, pero no prueba causalmente si el motivo fue pérdida de cuentas, quiebres de inventario o condiciones de crédito."
+                    grounded_in_finding_ids=["FINDING_TOTAL_CONTRACTION", "FINDING_WHOLESALE_CONCENTRATION"],
+                    confidence_rationale="Supported by accounting decomposition with exact reconciliation.",
+                    distinction_from_causality="This descriptive concentration identifies where the loss occurred in the ledger, but does not prove whether the root cause was account churn, inventory stockouts, or revised credit terms."
                 ))
 
         actions.append(ActionRecommendation(
             id="ACT_01_AUDIT_WHOLESALE_ACCOUNTS",
-            title="Auditoría comercial de cuentas clave B2B",
-            description="Contactar a los principales compradores mayoristas que compraron en marzo y no registraron pedidos en mayo para indagar motivos operativos.",
-            hypothesis_to_investigate="Pérdida de competitividad frente a alternativas de mercado o desabastecimiento de líneas clave.",
-            expected_impact="Recuperación potencial de hasta el 70% del volumen perdido en el canal mayorista.",
-            data_needed_to_confirm="Entrevistas comerciales cualitativas y registro de cotizaciones no concretadas.",
+            title="Commercial Audit of Key B2B Accounts",
+            description="Contact primary wholesale buyers who purchased in March but placed no orders in May to investigate operational drivers.",
+            hypothesis_to_investigate="Loss of competitiveness against market alternatives or stockouts in key product lines.",
+            expected_impact="Potential recovery of up to 70% of lost wholesale volume.",
+            data_needed_to_confirm="Qualitative commercial interviews and unfulfilled quotation records.",
             is_action_proposal_only=True
         ))
 
         summary = (
-            "El análisis verificado confirma una contracción neta sustancial entre marzo y mayo de 2026. "
-            "La descomposición matemática demuestra de forma concluyente que la caída se concentra casi en su totalidad "
-            "en el canal 'Mayorista / B2B', principalmente por disminución en la recompra de cuentas corporativas recurrentes. "
-            "Los canales retail y online se mantuvieron comparativamente estables."
+            "Verified analysis confirms a substantial net contraction between March and May 2026. "
+            "Mathematical decomposition conclusively shows that the decline is almost entirely concentrated "
+            "in the 'Wholesale / B2B' channel, primarily driven by reduced repurchase among recurring corporate accounts. "
+            "Retail and online channels remained comparatively stable."
         )
 
         return InsightReport(
@@ -189,11 +189,11 @@ class InterpreterAgent(BaseAgent):
             observed_findings=findings,
             interpretations=interpretations,
             unproven_hypotheses=[
-                "Hipótesis no comprobada: La caída en compras mayoristas podría deberse a un cambio en las condiciones de crédito comercial o a adelanto de compras en marzo."
+                "Unverified hypothesis: The drop in wholesale purchases could stem from tighter commercial credit terms or advance bulk purchasing in March."
             ],
             data_limitations=limitations,
             recommended_actions=actions,
             suggested_further_analyses=[
-                "Incorporar datos de stock y logística para descartar problemas de abastecimiento en productos B2B."
+                "Incorporate inventory and logistics data to rule out product availability bottlenecks for B2B lines."
             ]
         )

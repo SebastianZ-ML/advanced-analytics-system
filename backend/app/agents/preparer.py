@@ -1,5 +1,5 @@
 """
-Agent D: Data Preparer (Agente Preparador de Datos).
+Agent D: Data Preparer.
 Executes reproducible, strictly tracked transformations and safe joins,
 logging all row exclusions and validating join integrity.
 """
@@ -12,7 +12,7 @@ from app.engine.duckdb_engine import DuckDBAnalyticsEngine
 
 class DataPreparerAgent(BaseAgent):
     def __init__(self):
-        super().__init__(name="Agente Preparador de Datos", role="Transformación auditable, limpieza reproducible y uniones controladas")
+        super().__init__(name="Data Preparer Agent", role="Auditable transformations, reproducible cleaning, and controlled joins")
 
     def prepare_data(
         self,

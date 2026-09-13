@@ -45,4 +45,4 @@ class StateMachineError(Exception):
 
 def validate_transition(current: PipelineStage, target: PipelineStage) -> None:
     if target not in ALLOWED_TRANSITIONS.get(current, set()):
-        raise StateMachineError(f"Transición de estado inválida: de {current.value} a {target.value}")
+        raise StateMachineError(f"Invalid state transition: from {current.value} to {target.value}")

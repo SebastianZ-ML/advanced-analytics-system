@@ -109,15 +109,15 @@ class DuckDBAnalyticsEngine:
             )
 
         # Semantic meaning
-        meaning = "Tabla general"
+        meaning = "General table"
         if "order_id" in df.columns or "orden_id" in df.columns or "venta" in table_id.lower():
-            meaning = "Hechos transaccionales de pedidos/ventas (un registro por línea de pedido u orden)."
+            meaning = "Transactional order/sales facts (one record per order line or order)."
         elif "customer_id" in df.columns or "cliente" in table_id.lower():
-            meaning = "Dimensión de clientes (un registro por cliente)."
+            meaning = "Customer dimension (one record per customer)."
         elif "product_id" in df.columns or "producto" in table_id.lower():
-            meaning = "Dimensión de productos (un registro por producto)."
+            meaning = "Product dimension (one record per product)."
         elif "campaign_id" in df.columns or "campaña" in table_id.lower():
-            meaning = "Dimensión de campañas de marketing."
+            meaning = "Marketing campaign dimension."
 
         return TableProfile(
             table_id=table_id,
@@ -172,8 +172,8 @@ class DuckDBAnalyticsEngine:
                     affected_rows=0,
                     total_rows=0,
                     affected_percentage=100.0,
-                    description=f"La tabla {table_id} está vacía.",
-                    recommended_action="Cargar un archivo con datos."
+                    description=f"Table {table_id} is empty.",
+                    recommended_action="Upload a file with data."
                 ))
                 has_blocking = True
                 continue
@@ -199,8 +199,8 @@ class DuckDBAnalyticsEngine:
                             total_rows=total_rows,
                             affected_percentage=round((affected / total_rows) * 100, 2),
                             evidence_samples=dup_samples,
-                            description=f"Claves duplicadas encontradas en la dimensión {table_id} en la columna {pk}.",
-                            recommended_action="Deduplicar la dimensión conservando el registro más reciente antes de hacer uniones."
+                            description=f"Duplicate keys found in dimension {table_id} under column {pk}.",
+                            recommended_action="Deduplicate dimension preserving most recent record before joining."
                         ))
 
             # Check invalid dates & time coverage
@@ -223,8 +223,8 @@ class DuckDBAnalyticsEngine:
                             total_rows=total_rows,
                             affected_percentage=round((invalid_count / total_rows) * 100, 2),
                             evidence_samples=invalid_samples,
-                            description=f"Se detectaron {invalid_count} fechas inválidas o corruptas en {table_id}.{col}.",
-                            recommended_action="Excluir filas con fechas inválidas del análisis temporal y registrar su exclusión."
+                            description=f"Detected {invalid_count} invalid or corrupt dates in {table_id}.{col}.",
+                            recommended_action="Exclude rows with invalid dates from time series analysis and record their exclusion."
                         ))
 
                     valid_dates = parsed.dropna()
@@ -244,8 +244,8 @@ class DuckDBAnalyticsEngine:
                         if days_in_last_month < 15 and days_in_last_month < total_days_month:
                             is_last_period_incomplete = True
                             incomplete_details = (
-                                f"El mes final ({last_month}) contiene solo {days_in_last_month} días de registros. "
-                                f"Comparar este mes directamente con meses completos anteriores causará una distorsión falsa de caída."
+                                f"The final month ({last_month}) contains only {days_in_last_month} days of records. "
+                                f"Comparing this month directly with preceding full months will cause a false contraction distortion."
                             )
                             issues.append(QualityIssue(
                                 id=f"INCOMPLETE_PERIOD_{table_id}_{col}",
@@ -256,9 +256,9 @@ class DuckDBAnalyticsEngine:
                                 affected_rows=len(last_month_dates),
                                 total_rows=total_rows,
                                 affected_percentage=round((len(last_month_dates) / total_rows) * 100, 2),
-                                evidence_samples=[f"Días registrados en {last_month}: {days_in_last_month} de {total_days_month}"],
+                                evidence_samples=[f"Days recorded in {last_month}: {days_in_last_month} of {total_days_month}"],
                                 description=incomplete_details,
-                                recommended_action="Acotar la comparación analítica a meses enteros cerrados (ej. enero a mayo)."
+                                recommended_action="Bound comparative analytical window to closed full months (e.g., January to May)."
                             ))
 
             # Check returns / cancellations
@@ -276,8 +276,8 @@ class DuckDBAnalyticsEngine:
                         total_rows=total_rows,
                         affected_percentage=round((len(non_active) / total_rows) * 100, 2),
                         evidence_samples=[f"{k}: {v}" for k, v in non_active[st_col].value_counts().items()],
-                        description=f"Existen {len(non_active)} pedidos con estado cancelado o devuelto.",
-                        recommended_action="Filtrar pedidos completados para calcular facturación neta real efectiva."
+                        description=f"There are {len(non_active)} orders with cancelled or refunded status.",
+                        recommended_action="Filter completed orders to calculate actual effective accrued net sales."
                     ))
 
             # Check preserved leading zeros
@@ -293,8 +293,8 @@ class DuckDBAnalyticsEngine:
                         total_rows=total_rows,
                         affected_percentage=100.0 - cprof.null_percentage,
                         evidence_samples=cprof.sample_values,
-                        description=f"La columna {col} contiene identificadores con ceros a la izquierda (ej. {cprof.sample_values[:2]}).",
-                        recommended_action="Se conservó el tipo texto de forma segura para evitar pérdida de dígitos en uniones."
+                        description=f"Column {col} contains identifiers with leading zeros (e.g., {cprof.sample_values[:2]}).",
+                        recommended_action="Safely preserved text type to prevent loss of leading digits in joins."
                     ))
 
         # 2. Check Relationships and Orphans
@@ -358,8 +358,8 @@ class DuckDBAnalyticsEngine:
                             total_rows=len(df_fact),
                             affected_percentage=round((orphan_count_left / len(df_fact)) * 100, 2),
                             evidence_samples=orphan_samples,
-                            description=f"Existen {orphan_count_left} registros en {ft} con claves '{key}' que no existen en {dt} (ej. {orphan_samples}).",
-                            recommended_action=f"Realizar LEFT JOIN preservando los pedidos huérfanos con dimensión marcada como 'Sin clasificar / Desconocido'."
+                            description=f"There are {orphan_count_left} records in {ft} with key '{key}' not found in {dt} (e.g., {orphan_samples}).",
+                            recommended_action=f"Perform LEFT JOIN preserving orphan orders with dimension marked as 'Unclassified / Unknown'."
                         ))
 
                     if cardinality == "many_to_many":
@@ -373,8 +373,8 @@ class DuckDBAnalyticsEngine:
                             total_rows=len(df_dim),
                             affected_percentage=round(((len(df_dim) - dim_key_series.nunique()) / len(df_dim)) * 100, 2),
                             evidence_samples=df_dim[key].value_counts().head(2).index.tolist(),
-                            description=f"La clave {key} en {dt} no es única. Una unión directa multiplicará artificialmente los montos de venta.",
-                            recommended_action=f"Deduplicar {dt} por {key} antes de unir para garantizar cardinalidad many_to_one exacta."
+                            description=f"Key {key} in {dt} is not unique. A direct join will artificially multiply sales figures.",
+                            recommended_action=f"Deduplicate {dt} by {key} prior to joining to guarantee exact many_to_one cardinality."
                         ))
 
         report = DataQualityReport(
@@ -433,12 +433,12 @@ class DuckDBAnalyticsEngine:
                 output_table="orders_valid_dates",
                 operation="filter_invalid_dates",
                 columns_affected=[date_col],
-                rationale="Eliminación de registros con fechas corruptas o inválidas para asegurar consistencia de la serie temporal.",
+                rationale="Removal of records with corrupt or invalid dates to ensure time series integrity.",
                 parameters={"date_column": date_col},
                 rows_before=initial_order_count,
                 rows_after=len(df_orders),
                 rows_excluded=invalid_date_count,
-                exclusion_reason="Fecha inválida o corrupta",
+                exclusion_reason="Invalid or corrupt date",
                 exclusion_samples=excluded_samples[:5]
             ))
             step_idx += 1
@@ -459,12 +459,12 @@ class DuckDBAnalyticsEngine:
                 output_table="orders_completed",
                 operation="filter_completed_orders",
                 columns_affected=[status_col],
-                rationale="Conservación exclusiva de transacciones completadas para medir facturación neta real devengada.",
+                rationale="Exclusive retention of completed transactions to measure actual accrued net sales.",
                 parameters={"status_column": status_col, "allowed_values": ["COMPLETED", "COMPLETADO"]},
                 rows_before=count_before,
                 rows_after=len(df_orders),
                 rows_excluded=cancelled_count,
-                exclusion_reason="Pedido cancelado o reembolsado",
+                exclusion_reason="Cancelled or refunded order",
                 exclusion_samples=cancelled_samples
             ))
             step_idx += 1
@@ -486,12 +486,12 @@ class DuckDBAnalyticsEngine:
                     output_table="orders_closed_periods",
                     operation="filter_date_range",
                     columns_affected=["order_date_clean"],
-                    rationale=f"Exclusión de días del período incompleto posterior al {cutoff_date} para evitar sesgo de estacionalidad o falsa caída.",
+                    rationale=f"Exclusion of days from incomplete period after {cutoff_date} to prevent false contraction bias.",
                     parameters={"cutoff_date": cutoff_date},
                     rows_before=count_before,
                     rows_after=len(df_orders),
                     rows_excluded=incomplete_count,
-                    exclusion_reason=f"Registro posterior al período mensual cerrado ({cutoff_date})",
+                    exclusion_reason=f"Record post-dates closed monthly period ({cutoff_date})",
                     exclusion_samples=incomplete_samples
                 ))
                 step_idx += 1
@@ -550,7 +550,7 @@ class DuckDBAnalyticsEngine:
             is_safe = (multiplication_factor == 1.0) and (abs(sales_after_join - sales_before_join) < 0.01)
             join_warning = None
             if not is_safe:
-                join_warning = f"Alerta de unión: factor de multiplicación = {multiplication_factor}, variación de ventas = {sales_after_join - sales_before_join:.2f}"
+                join_warning = f"Join alert: multiplication factor = {multiplication_factor}, sales discrepancy = {sales_after_join - sales_before_join:.2f}"
 
             join_check = JoinCheckResult(
                 left_table="analytical_fact",
@@ -575,7 +575,7 @@ class DuckDBAnalyticsEngine:
                 output_table=f"analytical_with_{dim_name}",
                 operation="safe_left_join",
                 columns_affected=[left_key, right_key],
-                rationale=f"Unión controlada con dimensión {dim_name} tras deduplicación de claves para evitar multiplicación artificial de facturación.",
+                rationale=f"Controlled join with dimension {dim_name} following key deduplication to prevent artificial sales inflation.",
                 parameters={"join_type": "left", "left_key": left_key, "right_key": right_key, "dups_removed_in_dim": dups_removed},
                 rows_before=rows_before_join,
                 rows_after=rows_after_join,
@@ -587,7 +587,7 @@ class DuckDBAnalyticsEngine:
 
         # Fill missing dimension values as 'Sin clasificar / No atribuido'
         for col in analytical_df.select_dtypes(include=["object"]).columns:
-            analytical_df[col] = analytical_df[col].fillna("Sin clasificar")
+            analytical_df[col] = analytical_df[col].fillna("Unclassified")
 
         return analytical_df, records
 
@@ -609,7 +609,7 @@ class DuckDBAnalyticsEngine:
         """
         df_copy = df.copy()
         if dimension not in df_copy.columns:
-            df_copy[dimension] = "Sin clasificar"
+            df_copy[dimension] = "Unclassified"
         df_copy["year_month"] = pd.to_datetime(df_copy["order_date_clean"]).dt.strftime("%Y-%m")
 
         df_base = df_copy[df_copy["year_month"] == baseline_period]
@@ -725,7 +725,7 @@ class DuckDBAnalyticsEngine:
         if n_periods < 12:
             return {
                 "eligible": False,
-                "reason": f"Historial insuficiente: se disponen de {n_periods} meses cerrados (se requieren al menos 12 meses para modelar estacionalidad anual sin sobreajuste).",
-                "recommended_action": "Mantener proyección basada en promedio móvil o baseline ingenuo sin prometer certeza estacional."
+                "reason": f"Insufficient historical depth: {n_periods} closed months available (at least 12 months required to model annual seasonality without overfitting).",
+                "recommended_action": "Maintain moving average or naive baseline projection without claiming seasonal certainty."
             }
         return {"eligible": True}

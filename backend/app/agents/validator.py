@@ -1,5 +1,5 @@
 """
-Agent F: Analytical Validator (Agente Validador Analítico).
+Agent F: Analytical Validator.
 Performs independent, deterministic verification of analytical results.
 Does NOT rely on LLM intuition. Enforces mathematical reconciliation,
 finite value checks, cardinality checks, and automated repair cycles.
@@ -12,7 +12,7 @@ from app.contracts import AnalysisResult, TransformationRecord, ValidationCheck,
 
 class AnalyticalValidatorAgent(BaseAgent):
     def __init__(self):
-        super().__init__(name="Agente Validador Analítico", role="Auditoría matemática independiente y control de calidad de resultados")
+        super().__init__(name="Analytical Validator Agent", role="Independent mathematical audit and quality control of results")
 
     @staticmethod
     def _is_finite_number(val: Any) -> bool:
@@ -56,19 +56,19 @@ class AnalyticalValidatorAgent(BaseAgent):
                     has_blocking = True
                     checks.append(ValidationCheck(
                         check_name=f"Join_Safety_{jc.right_table}",
-                        description=f"Verificación de cardinalidad y no inflación en la unión con {jc.right_table}",
+                        description=f"Cardinality and non-inflation verification for join with {jc.right_table}",
                         passed=False,
                         severity="blocking",
-                        evidence=f"Factor de multiplicación: {jc.multiplication_factor}. Variación no reconciliada.",
-                        remedy_action=f"Deduplicar la dimensión {jc.right_table} antes de la unión."
+                        evidence=f"Multiplication factor: {jc.multiplication_factor}. Unreconciled variation.",
+                        remedy_action=f"Deduplicate dimension {jc.right_table} before join."
                     ))
                 else:
                     checks.append(ValidationCheck(
                         check_name=f"Join_Safety_{jc.right_table}",
-                        description=f"Verificación de cardinalidad en unión con {jc.right_table}",
+                        description=f"Cardinality verification for join with {jc.right_table}",
                         passed=True,
                         severity="info",
-                        evidence=f"Factor exacto: {jc.multiplication_factor}x. Métrica perfectamente reconciliada."
+                        evidence=f"Exact factor: {jc.multiplication_factor}x. Metric perfectly reconciled."
                     ))
 
         # Find period comparison result to reconcile against
@@ -87,22 +87,22 @@ class AnalyticalValidatorAgent(BaseAgent):
                 has_blocking = True
                 failed_result_ids.append(res.result_id)
                 res.validation_status = "rejected"
-                res.rejection_details = "Contiene valores NaN o infinitos en las métricas calculadas."
+                res.rejection_details = "Contains NaN or infinite values in calculated metrics."
                 checks.append(ValidationCheck(
                     check_name=f"Finite_Values_{res.result_id}",
-                    description="Comprobación de ausencia de NaN e infinitos",
+                    description="Verification of absence of NaN and infinite values",
                     passed=False,
                     severity="blocking",
-                    evidence=f"El resultado {res.result_id} contiene valores no finitos.",
-                    remedy_action="Filtrar valores nulos o divisiones por cero en el cálculo."
+                    evidence=f"Result {res.result_id} contains non-finite values.",
+                    remedy_action="Filter null values or prevent zero division in calculation."
                 ))
             else:
                 checks.append(ValidationCheck(
                     check_name=f"Finite_Values_{res.result_id}",
-                    description="Comprobación de ausencia de NaN e infinitos",
+                    description="Verification of absence of NaN and infinite values",
                     passed=True,
                     severity="info",
-                    evidence=f"Todos los valores calculados en {res.result_id} son finitos y definidos."
+                    evidence=f"All calculated values in {res.result_id} are finite and defined."
                 ))
 
             # Check 2B: Mathematical Reconciliation of Dimension Decompositions
@@ -120,24 +120,24 @@ class AnalyticalValidatorAgent(BaseAgent):
                         failed_result_ids.append(res.result_id)
                         res.validation_status = "rejected"
                         res.rejection_details = (
-                            f"Fallo de reconciliación matemática: la suma de contribuciones ({sum_contrib_delta:.2f}) "
-                            f"no iguala la variación total esperada ({target_total}). Discrepancia: {discrepancy:.2f}"
+                            f"Mathematical reconciliation failure: sum of contributions ({sum_contrib_delta:.2f}) "
+                            f"does not equal expected total change ({target_total}). Discrepancy: {discrepancy:.2f}"
                         )
                         checks.append(ValidationCheck(
                             check_name=f"Reconciliation_{res.result_id}",
-                            description="Reconciliación aditiva de descomposición dimensional al 100%",
+                            description="100% additive dimensional decomposition reconciliation",
                             passed=False,
                             severity="blocking",
                             evidence=res.rejection_details,
-                            remedy_action="Asegurar que las categorías sean mutuamente excluyentes y que no falten registros en la dimensión."
+                            remedy_action="Ensure categories are mutually exclusive and no dimension records are missing."
                         ))
                     else:
                         checks.append(ValidationCheck(
                             check_name=f"Reconciliation_{res.result_id}",
-                            description="Reconciliación aditiva de descomposición dimensional al 100%",
+                            description="100% additive dimensional decomposition reconciliation",
                             passed=True,
                             severity="info",
-                            evidence=f"Reconciliación perfecta: suma de deltas ({sum_contrib_delta:.2f}) iguala delta total ({target_total:.2f})."
+                            evidence=f"Perfect reconciliation: sum of deltas ({sum_contrib_delta:.2f}) equals total delta ({target_total:.2f})."
                         ))
 
             # Check 2C: Forecast Eligibility Warning
@@ -146,11 +146,11 @@ class AnalyticalValidatorAgent(BaseAgent):
                     has_warnings = True
                     checks.append(ValidationCheck(
                         check_name="Forecast_Sample_Size_Audit",
-                        description="Auditoría de tamaño muestral para pronóstico",
+                        description="Sample size audit for forecasting",
                         passed=True,  # Passing check of constraint
                         severity="warning",
-                        evidence=calc.get("reason", "Historial insuficiente"),
-                        remedy_action="Deshabilitar pronóstico complejo; mantener sólo análisis retrospectivo descriptivo."
+                        evidence=calc.get("reason", "Insufficient historical depth"),
+                        remedy_action="Disable complex forecast; maintain descriptive retrospective analysis only."
                     ))
 
             # If not rejected, mark approved or approved_with_warnings
@@ -164,7 +164,7 @@ class AnalyticalValidatorAgent(BaseAgent):
         if has_blocking:
             overall_status = "rejected"
             can_retry = (repair_attempt < 2)
-            repair_instruction = "Revisar uniones y filtros de datos para garantizar consistencia y reconciliación aditiva."
+            repair_instruction = "Review data joins and filters to ensure consistency and additive reconciliation."
         elif has_warnings:
             overall_status = "approved_with_warnings"
             can_retry = False

@@ -22,5 +22,5 @@ class BaseAgent(ABC):
     @property
     def execution_mode_label(self) -> str:
         if self.is_demo_mode:
-            return "Demostración sin LLM (Motor analítico determinista)"
-        return f"Modo asistido por LLM ({settings.llm_provider.capitalize()})"
+            return "Demo Without LLM (Deterministic Analytics Engine)"
+        return f"LLM-Assisted Mode ({settings.llm_provider.capitalize()})"

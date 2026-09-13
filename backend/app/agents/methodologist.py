@@ -1,5 +1,5 @@
 """
-Agent C: Methodologist & Researcher (Agente Metodólogo e Investigador).
+Agent C: Methodologist & Researcher.
 Selects mathematically and empirically appropriate methods from a registered internal catalog,
 documents assumptions, and produces a structured AnalysisPlan.
 Supports Gemini LLM proposal with deterministic validation and fallback.
@@ -20,79 +20,79 @@ from app.providers import ContextBuilder, LLMProvider, get_llm_provider
 REGISTERED_METHODS_CATALOG: List[Dict[str, Any]] = [
     {
         "step_id": "OP_01_METRIC_SUMMARY",
-        "operation_name": "Resumen descriptivo de métricas globales",
+        "operation_name": "Descriptive summary of global metrics",
         "category": "metric_summary",
-        "description": "Cálculo de volumen total de facturación bruta, neta, unidades y pedidos en el período cerrado.",
+        "description": "Calculation of total gross sales, net sales, units, and order volume over the closed period.",
         "required_inputs": ["orders_analytical"],
         "parameters": {"metric_columns": ["net_sales", "gross_sales", "units", "discount_amount"]},
-        "assumptions": ["Los montos corresponden a transacciones cerradas y completadas."],
-        "pre_execution_validations": ["Verificar que las columnas numéricas no contengan valores NaN."],
+        "assumptions": ["Amounts correspond to closed and completed transactions."],
+        "pre_execution_validations": ["Verify that numeric columns do not contain NaN values."],
         "depends_on": []
     },
     {
         "step_id": "OP_02_TIME_AGGREGATION",
-        "operation_name": "Agregación temporal mensual",
+        "operation_name": "Monthly temporal aggregation",
         "category": "time_aggregation",
-        "description": "Evolución mensual de facturación neta devengada y recuento de pedidos entre enero y mayo de 2026.",
+        "description": "Monthly evolution of accrued net sales and order count between January and May 2026.",
         "required_inputs": ["orders_analytical"],
         "parameters": {"date_column": "order_date_clean", "freq": "M"},
-        "assumptions": ["Se excluye el mes incompleto de junio para garantizar comparabilidad."],
-        "pre_execution_validations": ["Verificar cobertura temporal continua."],
+        "assumptions": ["Incomplete month of June is excluded to ensure comparability."],
+        "pre_execution_validations": ["Verify continuous temporal coverage."],
         "depends_on": ["OP_01_METRIC_SUMMARY"]
     },
     {
         "step_id": "OP_03_PERIOD_COMPARISON",
-        "operation_name": "Comparación de variación entre períodos pico y valle",
+        "operation_name": "Period-over-period peak to valley comparison",
         "category": "period_comparison",
-        "description": "Medición de la variación absoluta y porcentual entre marzo 2026 (mes pico pre-caída) y mayo 2026.",
+        "description": "Measurement of absolute and percentage variation between March 2026 (pre-drop peak month) and May 2026.",
         "required_inputs": ["orders_analytical"],
         "parameters": {"baseline_period": "2026-03", "current_period": "2026-05", "metric": "net_sales"},
-        "assumptions": ["Marzo representa el nivel operativo normal previo al inicio del declive."],
-        "pre_execution_validations": ["Verificar que ambos meses tengan datos completos."],
+        "assumptions": ["March represents the standard operational baseline prior to the decline."],
+        "pre_execution_validations": ["Verify that both months have complete data."],
         "depends_on": ["OP_02_TIME_AGGREGATION"]
     },
     {
         "step_id": "OP_04_DIMENSION_BREAKDOWN_CHANNEL",
-        "operation_name": "Descomposición aditiva por canal comercial (Waterfall)",
+        "operation_name": "Additive commercial channel breakdown (Waterfall)",
         "category": "dimension_breakdown",
-        "description": "Descomposición de la variación total en contribuciones mutuamente excluyentes por canal, reconciliadas al 100%.",
+        "description": "Decomposition of total variance into mutually exclusive contributions by channel, reconciled to 100%.",
         "required_inputs": ["orders_analytical"],
         "parameters": {"dimension": "channel", "baseline_period": "2026-03", "current_period": "2026-05", "metric": "net_sales"},
-        "assumptions": ["Los canales comerciales son exhaustivos y mutuamente excluyentes."],
-        "pre_execution_validations": ["Comprobar que la suma de variaciones por canal iguala exactamente la variación total."],
+        "assumptions": ["Commercial channels are exhaustive and mutually exclusive."],
+        "pre_execution_validations": ["Verify that the sum of channel variations exactly equals the total variation."],
         "depends_on": ["OP_03_PERIOD_COMPARISON"]
     },
     {
         "step_id": "OP_05_DIMENSION_BREAKDOWN_SEGMENT",
-        "operation_name": "Descomposición aditiva por segmento de cliente",
+        "operation_name": "Additive customer segment breakdown",
         "category": "dimension_breakdown",
-        "description": "Descomposición de la variación total por segmento de clientes para evaluar si la caída es corporativa o retail.",
+        "description": "Decomposition of total variance across customer segments to evaluate corporate vs retail decline.",
         "required_inputs": ["orders_analytical"],
         "parameters": {"dimension": "segment", "baseline_period": "2026-03", "current_period": "2026-05", "metric": "net_sales"},
-        "assumptions": ["Cada cliente pertenece a un único segmento en la dimensión."],
-        "pre_execution_validations": ["Comprobar reconciliación total."],
+        "assumptions": ["Each customer belongs to a unique segment in the dimension."],
+        "pre_execution_validations": ["Verify total reconciliation."],
         "depends_on": ["OP_03_PERIOD_COMPARISON"]
     },
     {
         "step_id": "OP_06_CUSTOMER_DYNAMICS",
-        "operation_name": "Dinámica de clientes nuevos vs recurrentes",
+        "operation_name": "New vs recurring customer dynamics",
         "category": "customer_dynamics",
-        "description": "Evaluación de si la pérdida de ventas proviene de menor adquisición de clientes nuevos o caída en la recompra de recurrentes.",
+        "description": "Evaluation of whether sales loss stems from lower customer acquisition or repurchase churn among recurring clients.",
         "required_inputs": ["orders_analytical"],
         "parameters": {"customer_id_col": "customer_id", "date_col": "order_date_clean"},
-        "assumptions": ["Cliente nuevo definido formalmente como aquel cuya primera orden ocurre en el mes analizado."],
-        "pre_execution_validations": ["Verificar consistencia de identificadores de clientes."],
+        "assumptions": ["New customer is formally defined as one whose first order occurs in the analyzed month."],
+        "pre_execution_validations": ["Verify customer identifier consistency."],
         "depends_on": ["OP_02_TIME_AGGREGATION"]
     },
     {
         "step_id": "OP_07_BASELINE_FORECAST_EVAL",
-        "operation_name": "Evaluación de viabilidad para pronóstico estadístico",
+        "operation_name": "Statistical forecast feasibility evaluation",
         "category": "baseline_forecast",
-        "description": "Comprobación de condiciones estadísticas mínimas (historial >= 12 períodos) para modelado predictivo.",
+        "description": "Verification of minimum statistical conditions (history >= 12 periods) for predictive modeling.",
         "required_inputs": ["orders_analytical"],
         "parameters": {"min_periods": 12},
-        "assumptions": ["Un pronóstico sin suficiente historial introduce sobreajuste y falsas expectativas."],
-        "pre_execution_validations": ["Revisar longitud de serie mensual."],
+        "assumptions": ["Forecasting without sufficient historical depth introduces overfitting and misleading certainty."],
+        "pre_execution_validations": ["Check monthly series length."],
         "depends_on": ["OP_02_TIME_AGGREGATION"]
     }
 ]
@@ -100,7 +100,7 @@ REGISTERED_METHODS_CATALOG: List[Dict[str, Any]] = [
 
 class MethodologistAgent(BaseAgent):
     def __init__(self, override_provider: Optional[LLMProvider] = None):
-        super().__init__(name="Agente Metodólogo", role="Selección de métodos analíticos registrados, definición de supuestos y diseño del plan")
+        super().__init__(name="Methodologist Agent", role="Selection of registered analytical methods, definition of assumptions, and plan design")
         self._override_provider = override_provider
 
     def build_plan(
@@ -155,7 +155,7 @@ class MethodologistAgent(BaseAgent):
                 valid_ops = []
                 for op in proposed_plan.operations:
                     if op.step_id not in registered_step_ids:
-                        print(f"[MethodologistAgent] Operación no registrada rechazada: {op.step_id}")
+                        print(f"[MethodologistAgent] Unregistered operation rejected: {op.step_id}")
                         continue
 
                     # Check for non-existent columns in parameters
@@ -172,7 +172,7 @@ class MethodologistAgent(BaseAgent):
 
                     invalid_cols = [c for c in cols_to_check if c not in all_catalog_cols]
                     if invalid_cols:
-                        print(f"[MethodologistAgent] Operación rechazada por referencia a columnas inexistentes: {invalid_cols}")
+                        print(f"[MethodologistAgent] Operation rejected for referencing non-existent columns: {invalid_cols}")
                         continue
 
                     valid_ops.append(op)
@@ -181,10 +181,10 @@ class MethodologistAgent(BaseAgent):
                     proposed_plan.operations = valid_ops
                     return proposed_plan
                 else:
-                    print("[MethodologistAgent] El plan propuesto por Gemini tenía operaciones insuficientes o no registradas. Aplicando plan determinista.")
+                    print("[MethodologistAgent] Proposed Gemini plan had insufficient or unregistered operations. Applying deterministic plan.")
 
             except Exception as e:
-                print(f"[MethodologistAgent] Fallback activado tras error en propuesta de plan: {e}")
+                print(f"[MethodologistAgent] Fallback activated after error in plan proposal: {e}")
 
         # Deterministic fallback plan
         return self._build_deterministic_plan(project_id, run_id)
@@ -208,13 +208,13 @@ class MethodologistAgent(BaseAgent):
             ExternalResearchCitation(
                 url="https://otexts.com/fpp3/decomposition.html",
                 title="Forecasting: Principles and Practice - Time Series Decomposition",
-                supported_claim="La descomposición aditiva exige categorías mutuamente excluyentes para reconciliar la suma de componentes con la serie agregada.",
+                supported_claim="Additive decomposition requires mutually exclusive categories to reconcile component sums with the aggregate series.",
                 is_primary_source=True
             ),
             ExternalResearchCitation(
                 url="https://pandas.pydata.org/docs/user_guide/merging.html",
                 title="Pandas Documentation: Merge and Join Integrity",
-                supported_claim="Las uniones de hechos a dimensiones deben verificar unicidad en la clave derecha para evitar inflación no intencionada de filas.",
+                supported_claim="Fact-to-dimension joins must enforce key uniqueness on the right table to prevent unintended row inflation.",
                 is_primary_source=True
             )
         ]
@@ -223,12 +223,12 @@ class MethodologistAgent(BaseAgent):
             schema_version="1.0",
             project_id=project_id,
             run_id=run_id,
-            title="Plan de Diagnóstico y Descomposición de Caída de Ventas",
-            rationale="Secuencia analítica diseñada para aislar el segmento y canal que explican la contracción observada, validando integridad matemática en cada paso.",
+            title="Sales Decline Diagnosis and Variance Decomposition Plan",
+            rationale="Analytical sequence designed to isolate segment and channel drivers explaining observed contraction, validating mathematical integrity at every step.",
             operations=ops,
             excluded_methods=[
-                "Regresión multivariada causal (datos no contienen variables de confusión exógenas como inflación o stockouts).",
-                "ARIMA / Prophet complejo (serie histórica de 5 meses no cumple el umbral estadístico mínimo de estacionalidad)."
+                "Causal multivariate regression (dataset lacks exogenous confounding variables such as inflation or competitor stockouts).",
+                "Complex ARIMA / Prophet (5-month historical series does not meet minimum statistical threshold for seasonality)."
             ],
             citations=citations
         )

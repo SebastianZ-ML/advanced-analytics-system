@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Plataforma Multiagente de Analítica Avanzada y Adaptativa</title>
+  <title>Adaptive Multi-Agent Advanced Analytics Platform</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Chart.js -->
@@ -38,7 +38,7 @@
     // --- Main Application Component ---
     function App() {
       const [activeTab, setActiveTab] = useState('projects');
-      const [health, setHealth] = useState({ is_demo_mode: true, mode_label: 'Cargando...' });
+      const [health, setHealth] = useState({ is_demo_mode: true, mode_label: 'Loading...', operating_mode: 'DEMO_WITHOUT_LLM' });
       const [projects, setProjects] = useState([]);
       const [selectedProject, setSelectedProject] = useState(null);
       const [currentRun, setCurrentRun] = useState(null);
@@ -48,7 +48,7 @@
       const [chatMessages, setChatMessages] = useState([
         {
           sender: 'assistant',
-          text: 'Hola. Soy el asistente analítico fundamentado. Puedes preguntarme sobre los resultados de la caída, recalcular métricas con filtros o consultar procedencia.',
+          text: 'Hello. I am the grounded conversational analytics assistant. You can ask me about decline drivers, request recalculated metrics with custom filters, or inspect data provenance.',
           citations: []
         }
       ]);
@@ -90,9 +90,9 @@
 
       const handleCreateProject = async (e) => {
         e.preventDefault();
-        const name = prompt('Nombre del nuevo proyecto:');
+        const name = prompt('New project name:');
         if (!name) return;
-        const desc = prompt('Descripción (opcional):') || '';
+        const desc = prompt('Description (optional):') || '';
         try {
           const res = await fetch('/api/projects', {
             method: 'POST',
@@ -103,7 +103,7 @@
           await loadProjects();
           selectProject(newProj.project_id);
         } catch (e) {
-          alert('Error creando proyecto: ' + e);
+          alert('Error creating project: ' + e);
         }
       };
 
@@ -113,11 +113,11 @@
         try {
           const res = await fetch(`/api/projects/${selectedProject.project_id}/load_demo`, { method: 'POST' });
           const data = await res.json();
-          alert(`Datos de demostración cargados exitosamente (${data.tables_loaded.length} tablas).`);
+          alert(`Demo dataset loaded successfully (${data.tables_loaded.length} tables).`);
           await selectProject(selectedProject.project_id);
           setActiveTab('catalog');
         } catch (e) {
-          alert('Error cargando demo: ' + e);
+          alert('Error loading demo: ' + e);
         } finally {
           setLoading(false);
         }
@@ -132,7 +132,7 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              objective_question: "Las ventas bajaron durante los últimos meses. Quiero entender dónde se concentra la caída, qué factores observables la explican y qué acciones conviene investigar.",
+              objective_question: "Sales declined over recent months. I want to understand where the drop is concentrated, what observable factors explain it, and what actions should be investigated.",
               user_clarifications: { metric_definition: 'net_sales', period_cutoff: 'exclude_incomplete_period' },
               force_error_for_test: forceError
             })
@@ -144,10 +144,10 @@
             await fetchEvents(data.run_id);
             setActiveTab('dashboard');
           } else {
-            alert('Fallo en la ejecución: ' + (data.detail || JSON.stringify(data)));
+            alert('Pipeline execution failed: ' + (data.detail || JSON.stringify(data)));
           }
         } catch (e) {
-          alert('Error iniciando ejecución: ' + e);
+          alert('Error starting execution: ' + e);
         } finally {
           setLoading(false);
         }
@@ -205,7 +205,7 @@
         } catch (e) {
           setChatMessages(prev => [...prev, {
             sender: 'assistant',
-            text: 'Error consultando al asistente: ' + e,
+            text: 'Error contacting assistant: ' + e,
             citations: []
           }]);
         } finally {
@@ -224,7 +224,7 @@
                 </div>
                 <div>
                   <h1 className="text-base font-semibold tracking-tight">Adaptive Multi-Agent Analytics</h1>
-                  <p className="text-xs text-slate-400">Analítica reproducible con control de calidad y procedencia</p>
+                  <p className="text-xs text-slate-400">Reproducible analytics with quality control and full provenance</p>
                 </div>
               </div>
 
@@ -241,8 +241,8 @@
                       : 'bg-blue-400'
                   }`}></span>
                   {health.operating_mode === 'LLM_ENABLED'
-                    ? `🟢 Gemini habilitado (${health.gemini_model || 'gemini-3.5-flash'})`
-                    : '🔵 Demostración sin LLM (Motor analítico determinista)'}
+                    ? `[Active: Gemini ${health.gemini_model || 'gemini-3.5-flash'}]`
+                    : '[Demo: Deterministic Engine]'}
                 </div>
 
                 {/* Project Selector */}
@@ -260,7 +260,7 @@
                     onClick={handleCreateProject}
                     className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-2.5 py-1.5 rounded transition shadow"
                   >
-                    + Nuevo
+                    + New
                   </button>
                 </div>
               </div>
@@ -270,15 +270,15 @@
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 bg-slate-950/60 border-t border-slate-800">
               <nav className="flex space-x-1 overflow-x-auto text-xs py-2">
                 {[
-                  { id: 'projects', label: '1. Proyectos' },
-                  { id: 'catalog', label: '2. Tablas y Catálogo' },
-                  { id: 'objective', label: '3. Objetivo y Pregunta' },
-                  { id: 'quality', label: '4. Calidad y Relaciones' },
-                  { id: 'plan', label: '5. Plan Analítico' },
-                  { id: 'execution', label: '6. Progreso y Auditoría' },
-                  { id: 'dashboard', label: '7. Dashboard Validado' },
-                  { id: 'chat', label: '8. Asistente Contextual' },
-                  { id: 'provenance', label: '9. Procedencia y Trazabilidad' }
+                  { id: 'projects', label: '1. Projects' },
+                  { id: 'catalog', label: '2. Tables & Catalog' },
+                  { id: 'objective', label: '3. Objective & Question' },
+                  { id: 'quality', label: '4. Quality & Relations' },
+                  { id: 'plan', label: '5. Analysis Plan' },
+                  { id: 'execution', label: '6. Progress & Audit' },
+                  { id: 'dashboard', label: '7. Validated Dashboard' },
+                  { id: 'chat', label: '8. Contextual Assistant' },
+                  { id: 'provenance', label: '9. Provenance & Audit Trail' }
                 ].map(tab => (
                   <button
                     key={tab.id}
@@ -303,8 +303,8 @@
               <div className="space-y-6">
                 <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 flex justify-between items-center">
                   <div>
-                    <h2 className="text-lg font-bold text-slate-900">Proyectos Analíticos</h2>
-                    <p className="text-sm text-slate-500">Administra espacios de trabajo, tablas y ejecuciones reproducibles.</p>
+                    <h2 className="text-lg font-bold text-slate-900">Analytics Projects</h2>
+                    <p className="text-sm text-slate-500">Manage workspaces, data tables, and reproducible runs.</p>
                   </div>
                   <div className="space-x-3">
                     <button
@@ -312,14 +312,14 @@
                       disabled={loading || !selectedProject}
                       className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded shadow transition disabled:opacity-50"
                     >
-                      {loading ? 'Cargando...' : '📥 Cargar Tablas Sintéticas de Demostración'}
+                      {loading ? 'Loading...' : '[Load Demo Tables]'}
                     </button>
                     <button
                       onClick={() => handleStartRun(false)}
                       disabled={loading || !selectedProject || !selectedProject.files?.length}
                       className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded shadow transition disabled:opacity-50"
                     >
-                      🚀 Ejecutar Recorrido Vertical Completo
+                      [Run Complete Analytical Workflow]
                     </button>
                   </div>
                 </div>
@@ -327,9 +327,9 @@
                 {selectedProject && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
-                      <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Proyecto Activo</h3>
+                      <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Active Project</h3>
                       <p className="text-base font-bold text-slate-900">{selectedProject.name}</p>
-                      <p className="text-xs text-slate-500 mt-1">{selectedProject.description || 'Sin descripción'}</p>
+                      <p className="text-xs text-slate-500 mt-1">{selectedProject.description || 'No description provided'}</p>
                       <div className="mt-4 pt-4 border-t border-slate-100 text-xs text-slate-400">
                         ID: <code className="text-slate-600">{selectedProject.project_id}</code>
                       </div>
@@ -337,23 +337,23 @@
 
                     <div className="bg-white p-5 rounded-lg shadow-sm border border-slate-200 md:col-span-2">
                       <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
-                        Tablas Registradas ({selectedProject.files?.length || 0})
+                        Registered Tables ({selectedProject.files?.length || 0})
                       </h3>
                       {!selectedProject.files?.length ? (
                         <div className="text-center py-6 text-sm text-slate-400">
-                          No hay tablas cargadas en este proyecto aún. Haz clic en "Cargar Tablas Sintéticas de Demostración" para comenzar.
+                          No tables loaded in this project yet. Click "[Load Demo Tables]" to begin.
                         </div>
                       ) : (
                         <div className="overflow-x-auto">
                           <table className="w-full text-xs text-left">
                             <thead className="bg-slate-50 text-slate-600 uppercase border-b border-slate-200">
                               <tr>
-                                <th className="py-2 px-3">Tabla</th>
-                                <th className="py-2 px-3">Archivo Origen</th>
-                                <th className="py-2 px-3">Hoja</th>
-                                <th className="py-2 px-3">Filas</th>
-                                <th className="py-2 px-3">Columnas</th>
-                                <th className="py-2 px-3">Hash SHA-256</th>
+                                <th className="py-2 px-3">Table</th>
+                                <th className="py-2 px-3">Source File</th>
+                                <th className="py-2 px-3">Sheet</th>
+                                <th className="py-2 px-3">Rows</th>
+                                <th className="py-2 px-3">Columns</th>
+                                <th className="py-2 px-3">SHA-256 Hash</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -381,9 +381,9 @@
             {activeTab === 'catalog' && (
               <div className="space-y-6">
                 <div className="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
-                  <h2 className="text-base font-bold text-slate-900 mb-1">Catálogo de Datos y Perfilado de Columnas</h2>
+                  <h2 className="text-base font-bold text-slate-900 mb-1">Data Catalog & Column Profiling</h2>
                   <p className="text-xs text-slate-500">
-                    Inspección determinista de tipos, valores ausentes y preservación de ceros a la izquierda.
+                    Deterministic inspection of data types, null percentages, and leading zero preservation.
                   </p>
                 </div>
 
@@ -395,11 +395,11 @@
                           <span className="text-xs font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded mr-2">
                             {tblId}
                           </span>
-                          <span className="text-xs text-slate-500">({tbl.source_filename} {tbl.sheet_name ? `> Hoja: ${tbl.sheet_name}` : ''})</span>
+                          <span className="text-xs text-slate-500">({tbl.source_filename} {tbl.sheet_name ? `> Sheet: ${tbl.sheet_name}` : ''})</span>
                           <p className="text-xs text-slate-600 mt-1 italic">{tbl.row_semantic_meaning}</p>
                         </div>
                         <div className="text-right text-xs text-slate-500">
-                          <div><strong>{tbl.row_count.toLocaleString()}</strong> filas | <strong>{tbl.column_count}</strong> columnas</div>
+                          <div><strong>{tbl.row_count.toLocaleString()}</strong> rows | <strong>{tbl.column_count}</strong> columns</div>
                           <div className="font-mono text-[10px] text-slate-400 mt-0.5">SHA: {tbl.file_hash_sha256.slice(0, 12)}...</div>
                         </div>
                       </div>
@@ -408,12 +408,12 @@
                         <table className="w-full text-xs text-left">
                           <thead className="bg-slate-100 text-slate-600 uppercase border-b border-slate-200">
                             <tr>
-                              <th className="py-2 px-3">Columna</th>
-                              <th className="py-2 px-3">Tipo Inferido</th>
-                              <th className="py-2 px-3">Nulos (%)</th>
-                              <th className="py-2 px-3">Únicos</th>
-                              <th className="py-2 px-3">Ceros Iniciales</th>
-                              <th className="py-2 px-3">Muestra de Valores</th>
+                              <th className="py-2 px-3">Column</th>
+                              <th className="py-2 px-3">Inferred Type</th>
+                              <th className="py-2 px-3">Nulls (%)</th>
+                              <th className="py-2 px-3">Unique</th>
+                              <th className="py-2 px-3">Leading Zeros</th>
+                              <th className="py-2 px-3">Sample Values</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
@@ -433,7 +433,7 @@
                                 <td className="py-2 px-3 text-slate-600">{c.unique_count}</td>
                                 <td className="py-2 px-3">
                                   {c.has_leading_zeros ? (
-                                    <span className="badge-info px-2 py-0.5 rounded text-[10px] font-bold">Conservado (Texto)</span>
+                                    <span className="badge-info px-2 py-0.5 rounded text-[10px] font-bold">Preserved (Text)</span>
                                   ) : (
                                     <span className="text-slate-300">-</span>
                                   )}
@@ -450,7 +450,7 @@
                   ))
                 ) : (
                   <div className="bg-white p-8 text-center rounded-lg border border-slate-200 text-sm text-slate-500">
-                    Ejecuta el pipeline para que el Agente Auditor genere el catálogo y perfilado.
+                    Run the pipeline for the Auditor Agent to generate the catalog and profiling report.
                   </div>
                 )}
               </div>
@@ -464,37 +464,37 @@
                     <div>
                       <div className="flex items-center space-x-2">
                         <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
-                          Agente Organizador • ObjectiveSpec
+                          Organizer Agent • ObjectiveSpec
                         </span>
                         <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full border ${
                           health.operating_mode === 'LLM_ENABLED'
                             ? 'bg-purple-50 text-purple-700 border-purple-200'
                             : 'bg-blue-50 text-blue-700 border-blue-200'
                         }`}>
-                          {health.operating_mode === 'LLM_ENABLED' ? '✨ Propuesto con asistencia de Gemini' : '📋 Reglas deterministas'}
+                          {health.operating_mode === 'LLM_ENABLED' ? '[Proposed with Gemini Assistance]' : '[Deterministic Rules Engine]'}
                         </span>
                       </div>
                       <h2 className="text-lg font-bold text-slate-900 mt-2">
-                        {artifacts.ObjectiveSpec?.original_question || 'Las ventas bajaron durante los últimos meses...'}
+                        {artifacts.ObjectiveSpec?.original_question || 'Sales declined over recent months...'}
                       </h2>
                     </div>
                     <span className="badge-success px-3 py-1 rounded-full text-xs font-semibold">
-                      Estado: {artifacts.ObjectiveSpec?.status || 'Borrador'}
+                      Status: {artifacts.ObjectiveSpec?.status || 'Draft'}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                     <div className="space-y-4">
                       <div>
-                        <h4 className="text-xs font-semibold text-slate-500 uppercase">Objetivo Operativo</h4>
+                        <h4 className="text-xs font-semibold text-slate-500 uppercase">Operational Objective</h4>
                         <p className="text-sm text-slate-800 mt-1 font-medium">{artifacts.ObjectiveSpec?.operational_objective}</p>
                       </div>
                       <div>
-                        <h4 className="text-xs font-semibold text-slate-500 uppercase">Decisión a Informar</h4>
+                        <h4 className="text-xs font-semibold text-slate-500 uppercase">Decision to Inform</h4>
                         <p className="text-sm text-slate-800 mt-1">{artifacts.ObjectiveSpec?.decision_to_inform}</p>
                       </div>
                       <div>
-                        <h4 className="text-xs font-semibold text-slate-500 uppercase">Métrica Principal</h4>
+                        <h4 className="text-xs font-semibold text-slate-500 uppercase">Primary Metric</h4>
                         <span className="inline-block mt-1 px-2.5 py-1 rounded bg-indigo-50 text-indigo-700 font-mono text-xs font-bold">
                           {artifacts.ObjectiveSpec?.primary_metric}
                         </span>
@@ -503,11 +503,11 @@
 
                     <div className="space-y-4">
                       <div>
-                        <h4 className="text-xs font-semibold text-slate-500 uppercase">Período de Comparación</h4>
+                        <h4 className="text-xs font-semibold text-slate-500 uppercase">Comparison Period</h4>
                         <p className="text-sm text-slate-800 mt-1 font-medium">{artifacts.ObjectiveSpec?.comparison_period}</p>
                       </div>
                       <div>
-                        <h4 className="text-xs font-semibold text-slate-500 uppercase">Criterios de Aceptación</h4>
+                        <h4 className="text-xs font-semibold text-slate-500 uppercase">Acceptance Criteria</h4>
                         <ul className="text-xs text-slate-600 mt-1 list-disc list-inside space-y-1">
                           {artifacts.ObjectiveSpec?.acceptance_criteria?.map((c, idx) => (
                             <li key={idx}>{c}</li>
@@ -515,7 +515,7 @@
                         </ul>
                       </div>
                       <div>
-                        <h4 className="text-xs font-semibold text-slate-500 uppercase">Alcance Excluido</h4>
+                        <h4 className="text-xs font-semibold text-slate-500 uppercase">Excluded Scope</h4>
                         <ul className="text-xs text-slate-500 mt-1 list-disc list-inside space-y-1 italic">
                           {artifacts.ObjectiveSpec?.excluded_scope?.map((s, idx) => (
                             <li key={idx}>{s}</li>
@@ -529,7 +529,7 @@
                   {artifacts.ObjectiveSpec?.pending_ambiguities?.length > 0 && (
                     <div className="mt-6 pt-6 border-t border-slate-100">
                       <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">
-                        Resolución de Ambigüedades Semánticas
+                        Semantic Ambiguity Resolutions
                       </h4>
                       <div className="space-y-3">
                         {artifacts.ObjectiveSpec.pending_ambiguities.map(amb => (
@@ -540,7 +540,7 @@
                             </div>
                             <div className="text-right">
                               <span className="text-[11px] font-medium text-indigo-700 bg-indigo-100 px-2.5 py-1 rounded">
-                                Decisión: {amb.user_decision || amb.proposed_default}
+                                Resolution: {amb.user_decision || amb.proposed_default}
                               </span>
                             </div>
                           </div>
@@ -556,9 +556,9 @@
             {activeTab === 'quality' && (
               <div className="space-y-6">
                 <div className="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
-                  <h2 className="text-base font-bold text-slate-900 mb-1">Informe de Calidad de Datos (DataQualityReport)</h2>
+                  <h2 className="text-base font-bold text-slate-900 mb-1">Data Quality Report (DataQualityReport)</h2>
                   <p className="text-xs text-slate-500">
-                    Anomalías detectadas deterministamente con evidencia empírica y acciones aplicadas.
+                    Deterministically audited anomalies with empirical evidence and applied mitigations.
                   </p>
                 </div>
 
@@ -572,49 +572,49 @@
                               {iss.severity} • {iss.issue_type}
                             </span>
                             <span className="text-xs text-slate-500">
-                              Afecta: <strong>{iss.affected_rows}</strong> filas ({iss.affected_percentage}%)
+                              Affects: <strong>{iss.affected_rows}</strong> rows ({iss.affected_percentage}%)
                             </span>
                           </div>
                           <p className="text-xs font-semibold text-slate-800">{iss.description}</p>
                           {iss.evidence_samples?.length > 0 && (
                             <div className="mt-2 text-[11px] bg-slate-50 p-2 rounded border border-slate-100 font-mono text-slate-600">
-                              Evidencia: {Array.isArray(iss.evidence_samples) ? iss.evidence_samples.slice(0, 3).join(', ') : JSON.stringify(iss.evidence_samples)}
+                              Evidence: {Array.isArray(iss.evidence_samples) ? iss.evidence_samples.slice(0, 3).join(', ') : JSON.stringify(iss.evidence_samples)}
                             </div>
                           )}
                         </div>
                         <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-500">
-                          <strong>Acción recomendada:</strong> {iss.recommended_action}
+                          <strong>Recommended Action:</strong> {iss.recommended_action}
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="bg-white p-8 text-center rounded-lg border border-slate-200 text-sm text-slate-500">
-                    No se han registrado incidencias de calidad aún.
+                    No data quality issues recorded yet.
                   </div>
                 )}
 
                 {/* Relationships */}
                 <div className="bg-white p-5 rounded-lg shadow-sm border border-slate-200 mt-6">
-                  <h3 className="text-sm font-bold text-slate-900 mb-3">Relaciones entre Tablas y Control de Cardinalidad</h3>
+                  <h3 className="text-sm font-bold text-slate-900 mb-3">Table Relationships & Cardinality Verification</h3>
                   {artifacts.Relationships?.length > 0 ? (
                     <div className="overflow-x-auto">
                       <table className="w-full text-xs text-left">
                         <thead className="bg-slate-50 text-slate-600 uppercase border-b border-slate-200">
                           <tr>
-                            <th className="py-2 px-3">Unión (Izquierda ➔ Derecha)</th>
-                            <th className="py-2 px-3">Claves</th>
-                            <th className="py-2 px-3">Cardinalidad</th>
-                            <th className="py-2 px-3">Coincidencia Izq.</th>
-                            <th className="py-2 px-3">Huérfanos Izq.</th>
-                            <th className="py-2 px-3">Riesgo</th>
-                            <th className="py-2 px-3">Estado</th>
+                            <th className="py-2 px-3">Join (Left to Right)</th>
+                            <th className="py-2 px-3">Keys</th>
+                            <th className="py-2 px-3">Cardinality</th>
+                            <th className="py-2 px-3">Left Match Rate</th>
+                            <th className="py-2 px-3">Left Orphans</th>
+                            <th className="py-2 px-3">Risk Level</th>
+                            <th className="py-2 px-3">Status</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                           {artifacts.Relationships.map(r => (
                             <tr key={r.id}>
-                              <td className="py-2 px-3 font-semibold text-slate-800">{r.left_table} ➔ {r.right_table}</td>
+                              <td className="py-2 px-3 font-semibold text-slate-800">{r.left_table} -&gt; {r.right_table}</td>
                               <td className="py-2 px-3 font-mono text-indigo-600">{r.left_key} = {r.right_key}</td>
                               <td className="py-2 px-3 font-mono">{r.cardinality}</td>
                               <td className="py-2 px-3">{r.match_rate_left}%</td>
@@ -628,7 +628,7 @@
                                 </span>
                               </td>
                               <td className="py-2 px-3">
-                                <span className="text-emerald-700 font-semibold">✓ Confirmada con Deduplicación</span>
+                                <span className="text-emerald-700 font-semibold">[Confirmed with Deduplication]</span>
                               </td>
                             </tr>
                           ))}
@@ -636,7 +636,7 @@
                       </table>
                     </div>
                   ) : (
-                    <p className="text-xs text-slate-400">No se han analizado relaciones aún.</p>
+                    <p className="text-xs text-slate-400">No relationships analyzed yet.</p>
                   )}
                 </div>
               </div>
@@ -648,14 +648,14 @@
                 <div className="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
                   <div className="flex items-center space-x-2 mb-1">
                     <h2 className="text-base font-bold text-slate-900">
-                      {artifacts.AnalysisPlan?.title || 'Plan Analítico Registrado'}
+                      {artifacts.AnalysisPlan?.title || 'Registered Analysis Plan'}
                     </h2>
                     <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full border ${
                       health.operating_mode === 'LLM_ENABLED'
                         ? 'bg-purple-50 text-purple-700 border-purple-200'
                         : 'bg-blue-50 text-blue-700 border-blue-200'
                     }`}>
-                      {health.operating_mode === 'LLM_ENABLED' ? '✨ Plan propuesto por Gemini y validado en catálogo' : '📐 Catálogo de métodos determinista'}
+                      {health.operating_mode === 'LLM_ENABLED' ? '[Proposed by Gemini & Validated against Catalog]' : '[Deterministic Methods Catalog]'}
                     </span>
                   </div>
                   <p className="text-xs text-slate-500">{artifacts.AnalysisPlan?.rationale}</p>
@@ -676,8 +676,8 @@
                     </div>
                     <p className="text-xs text-slate-600 ml-8">{op.description}</p>
                     <div className="ml-8 mt-2 flex flex-wrap gap-4 text-[11px] text-slate-500">
-                      <div><strong>Entradas:</strong> {op.required_inputs.join(', ')}</div>
-                      <div><strong>Supuestos:</strong> {op.assumptions.join(' | ')}</div>
+                      <div><strong>Inputs:</strong> {op.required_inputs.join(', ')}</div>
+                      <div><strong>Assumptions:</strong> {op.assumptions.join(' | ')}</div>
                     </div>
                   </div>
                 ))}
@@ -685,7 +685,7 @@
                 {artifacts.AnalysisPlan?.citations?.length > 0 && (
                   <div className="bg-indigo-50/60 p-4 rounded-lg border border-indigo-100">
                     <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-2">
-                      📚 Citas y Respaldo Metodológico
+                      Methodological Citations & Defense
                     </h4>
                     <div className="space-y-2">
                       {artifacts.AnalysisPlan.citations.map((c, i) => (
@@ -706,18 +706,18 @@
               <div className="space-y-6">
                 <div className="bg-white p-5 rounded-lg shadow-sm border border-slate-200 flex justify-between items-center">
                   <div>
-                    <h2 className="text-base font-bold text-slate-900 mb-1">Registro de Ejecución y Máquina de Estados</h2>
+                    <h2 className="text-base font-bold text-slate-900 mb-1">Execution Audit Trail & State Machine</h2>
                     <p className="text-xs text-slate-500">
-                      Transiciones observables en tiempo real y registro de intentos de auto-reparación.
+                      Real-time observable stage transitions and automated repair tracking.
                     </p>
                   </div>
                   <div className="space-x-2">
                     <button
                       onClick={() => handleStartRun(true)}
                       className="bg-red-600 hover:bg-red-500 text-white text-xs font-semibold px-3 py-1.5 rounded shadow"
-                      title="Fuerza un valor NaN para verificar el rechazo del validador y el ciclo de reparación automática"
+                      title="Injects NaN to verify independent validator rejection and automated repair loop"
                     >
-                      🧪 Probar Ciclo de Reparación (Inyectar Error)
+                      [Test Repair Cycle: Inject Error]
                     </button>
                   </div>
                 </div>
@@ -734,26 +734,26 @@
                       </div>
                     ))
                   ) : (
-                    <div className="text-slate-500 italic">Esperando inicio de ejecución...</div>
+                    <div className="text-slate-500 italic">Awaiting pipeline start...</div>
                   )}
                 </div>
 
                 {/* Transformations applied */}
                 {artifacts.TransformationRecords?.length > 0 && (
                   <div className="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
-                    <h3 className="text-sm font-bold text-slate-900 mb-3">Registro Auditable de Transformaciones (TransformationRecords)</h3>
+                    <h3 className="text-sm font-bold text-slate-900 mb-3">Auditable Transformation Log (TransformationRecords)</h3>
                     <div className="space-y-3">
                       {artifacts.TransformationRecords.map(t => (
                         <div key={t.transformation_id} className="p-3 bg-slate-50 rounded border border-slate-200 text-xs">
                           <div className="flex justify-between font-semibold text-slate-800">
                             <span>{t.step_index}. {t.operation} (ID: {t.transformation_id})</span>
-                            <span className="text-slate-500">Filas: {t.rows_before} ➔ {t.rows_after} (Excluidas: {t.rows_excluded})</span>
+                            <span className="text-slate-500">Rows: {t.rows_before} -&gt; {t.rows_after} (Excluded: {t.rows_excluded})</span>
                           </div>
                           <p className="text-slate-600 mt-1">{t.rationale}</p>
                           {t.join_check && (
                             <div className="mt-2 p-2 bg-white rounded border border-slate-200 text-[11px] text-slate-500 flex justify-between">
-                              <span>Unión con <strong>{t.join_check.right_table}</strong>: factor {t.join_check.multiplication_factor}x</span>
-                              <span className="text-emerald-700 font-bold">✓ Métrica reconciliada: {t.join_check.metric_reconciled ? 'SÍ' : 'NO'}</span>
+                              <span>Join with <strong>{t.join_check.right_table}</strong>: factor {t.join_check.multiplication_factor}x</span>
+                              <span className="text-emerald-700 font-bold">[Metric Reconciled: {t.join_check.metric_reconciled ? 'YES' : 'NO'}]</span>
                             </div>
                           )}
                         </div>
@@ -775,13 +775,13 @@
                         <div>
                           <div className="flex flex-wrap items-center gap-2 mb-2">
                             <span className="badge-success text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
-                              Dashboard Validado • 100% Reconciliado
+                              [Validated Dashboard - 100% Reconciled]
                             </span>
                             <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300">
-                              ⚡ Calculado por herramienta (DuckDB / Pandas)
+                              [Calculated by Engine: DuckDB / Pandas]
                             </span>
                             <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-300">
-                              🛡️ Validado deterministamente
+                              [Deterministically Validated]
                             </span>
                           </div>
                           <h2 className="text-xl font-bold text-slate-900">{artifacts.DashboardSpec.title}</h2>
@@ -792,7 +792,7 @@
                             onClick={() => window.print()}
                             className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded transition"
                           >
-                            🖨️ Exportar / Imprimir
+                            [Export / Print]
                           </button>
                         </div>
                       </div>
@@ -807,11 +807,11 @@
                               <p className={`text-xs mt-1 font-medium ${
                                 card.trend_direction === 'down' ? 'text-red-600' : 'text-slate-500'
                               }`}>
-                                {card.trend_direction === 'down' ? '▼ ' : ''}{card.comparison_text}
+                                {card.trend_direction === 'down' ? 'v ' : ''}{card.comparison_text}
                               </p>
                             )}
                             <div className="mt-2 text-[10px] text-slate-400 border-t border-slate-200/60 pt-1">
-                              Período: {card.period}
+                              Period: {card.period}
                             </div>
                           </div>
                         ))}
@@ -823,7 +823,7 @@
                       <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
                         <div className="flex items-center justify-between mb-3">
                           <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-                            🧠 Conclusiones y Diagnóstico Verificado
+                            Executive Findings & Verified Diagnosis
                           </h3>
                           <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${
                             health.operating_mode === 'LLM_ENABLED'
@@ -831,8 +831,8 @@
                               : 'bg-blue-100 text-blue-800 border-blue-200'
                           }`}>
                             {health.operating_mode === 'LLM_ENABLED'
-                              ? '✨ Redactado por Gemini (Citas validadas de DuckDB)'
-                              : '📄 Redactado por motor determinista'}
+                              ? '[Drafted by Gemini with Verified DuckDB Citations]'
+                              : '[Drafted by Deterministic Catalog Engine]'}
                           </span>
                         </div>
                         <p className="text-sm text-slate-700 leading-relaxed font-medium bg-indigo-50/40 p-4 rounded border border-indigo-100 mb-4">
@@ -841,25 +841,25 @@
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div>
-                            <h4 className="text-xs font-bold text-slate-600 uppercase mb-2">Hallazgos Observados (Hechos Probados)</h4>
+                            <h4 className="text-xs font-bold text-slate-600 uppercase mb-2">Observed Findings (Empirically Verified)</h4>
                             <div className="space-y-2">
                               {artifacts.InsightReport.observed_findings.map(f => (
                                 <div key={f.id} className="text-xs text-slate-800 bg-slate-50 p-2.5 rounded border border-slate-100">
-                                  <strong>✓ {f.claim}</strong>
-                                  <div className="text-[10px] text-slate-400 mt-1 font-mono">Enlace a resultado: {f.result_id}</div>
+                                  <strong>[Verified] {f.claim}</strong>
+                                  <div className="text-[10px] text-slate-400 mt-1 font-mono">Linked result ID: {f.result_id}</div>
                                 </div>
                               ))}
                             </div>
                           </div>
 
                           <div>
-                            <h4 className="text-xs font-bold text-slate-600 uppercase mb-2">Acciones Sugeridas a Investigar</h4>
+                            <h4 className="text-xs font-bold text-slate-600 uppercase mb-2">Suggested Action Proposals</h4>
                             <div className="space-y-2">
                               {artifacts.InsightReport.recommended_actions.map(act => (
                                 <div key={act.id} className="text-xs text-slate-800 bg-emerald-50/40 p-2.5 rounded border border-emerald-100">
                                   <strong className="text-emerald-900">{act.title}</strong>: {act.description}
                                   <div className="text-[10px] text-emerald-700 mt-1 italic">
-                                    Hipótesis: {act.hypothesis_to_investigate} (Requiere confirmación cualitativa)
+                                    Hypothesis to confirm: {act.hypothesis_to_investigate} (Requires qualitative confirmation)
                                   </div>
                                 </div>
                               ))}
@@ -880,7 +880,7 @@
                             </div>
                             {chart.is_primary_objective && (
                               <span className="badge-info text-[10px] font-bold px-2 py-0.5 rounded uppercase">
-                                Objetivo Central
+                                Primary Objective
                               </span>
                             )}
                           </div>
@@ -916,7 +916,7 @@
                     {artifacts.DashboardSpec.quality_alerts?.length > 0 && (
                       <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
                         <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wider mb-1">
-                          ⚠️ Limitaciones de Datos y Alcance Metodológico
+                          [Notice] Data Limitations & Methodological Boundaries
                         </h4>
                         <ul className="text-xs text-amber-800 list-disc list-inside space-y-1">
                           {artifacts.DashboardSpec.quality_alerts.map((al, idx) => (
@@ -928,7 +928,7 @@
                   </>
                 ) : (
                   <div className="bg-white p-8 text-center rounded-lg border border-slate-200 text-sm text-slate-500">
-                    Ejecuta el pipeline para generar el dashboard interactivo y validado.
+                    Run the pipeline to generate the validated, interactive dashboard.
                   </div>
                 )}
               </div>
@@ -939,33 +939,33 @@
               <div className="space-y-4 max-w-4xl mx-auto">
                 <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex justify-between items-center">
                   <div>
-                    <h2 className="text-sm font-bold text-slate-900">Asistente Conversacional Fundamentado</h2>
-                    <p className="text-xs text-slate-500">Consultas sobre resultados existentes, recálculos con filtros y citas trazables.</p>
+                    <h2 className="text-sm font-bold text-slate-900">Grounded Conversational Assistant</h2>
+                    <p className="text-xs text-slate-500">Query verified findings, recalculate with filters, and inspect traceable citations.</p>
                   </div>
                   <span className="text-[11px] font-mono bg-slate-100 text-slate-600 px-2.5 py-1 rounded">
-                    Modo: {health.mode_label}
+                    Mode: {health.mode_label}
                   </span>
                 </div>
 
                 {/* Pre-canned query buttons */}
                 <div className="flex flex-wrap gap-2">
                   <button
-                    onClick={() => handleSendChat('¿Por qué decimos que la caída se concentra en el canal mayorista?')}
+                    onClick={() => handleSendChat('Why do we conclude the decline is concentrated in wholesale?')}
                     className="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-full transition"
                   >
-                    🔍 Explicar concentración de caída
+                    [Explain wholesale decline concentration]
                   </button>
                   <button
-                    onClick={() => handleSendChat('¿Cuánto vendió la región Metropolitana?')}
+                    onClick={() => handleSendChat('How much was sold in the Metropolitan region?')}
                     className="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-full transition"
                   >
-                    🧮 Recalcular ventas en Región Metropolitana
+                    [Recalculate Metropolitan sales]
                   </button>
                   <button
-                    onClick={() => handleSendChat('¿Qué competidor nos quitó clientes y cuál fue su precio?')}
+                    onClick={() => handleSendChat('Which competitor lowered prices to cause the sales drop?')}
                     className="text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 px-3 py-1.5 rounded-full transition"
                   >
-                    ❓ Preguntar dato ausente (Competidor)
+                    [Test unanswerable query: Competitor]
                   </button>
                 </div>
 
@@ -987,18 +987,18 @@
                         {msg.queryType && (
                           <div className="mb-2">
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                              msg.queryType === 'FILTER_RECALCULATION'
+                              msg.queryType === 'recalculate_with_filters' || msg.queryType === 'FILTER_RECALCULATION'
                                 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                                : msg.queryType === 'UNANSWERABLE'
+                                : msg.queryType === 'unanswerable_by_data' || msg.queryType === 'UNANSWERABLE'
                                 ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                                : msg.queryType === 'NEW_ANALYSIS_REQUEST'
+                                : msg.queryType === 'request_new_analysis' || msg.queryType === 'NEW_ANALYSIS_REQUEST'
                                 ? 'bg-blue-100 text-blue-800 border border-blue-300'
                                 : 'bg-purple-100 text-purple-800 border border-purple-300'
                             }`}>
-                              {msg.queryType === 'FILTER_RECALCULATION' ? '⚡ Recálculo en memoria (Pandas)' :
-                               msg.queryType === 'UNANSWERABLE' ? '⚠️ Sin datos disponibles / Fuera de alcance' :
-                               msg.queryType === 'NEW_ANALYSIS_REQUEST' ? '💡 Requiere nuevo análisis de datos' :
-                               (health.operating_mode === 'LLM_ENABLED' ? '✨ Explicación de Gemini (Citas verificadas)' : '📖 Explicación determinista')}
+                              {msg.queryType === 'recalculate_with_filters' || msg.queryType === 'FILTER_RECALCULATION' ? '[In-Memory Recalculation: DuckDB / Pandas]' :
+                               msg.queryType === 'unanswerable_by_data' || msg.queryType === 'UNANSWERABLE' ? '[Notice: Missing Data / Out of Scope]' :
+                               msg.queryType === 'request_new_analysis' || msg.queryType === 'NEW_ANALYSIS_REQUEST' ? '[Notice: New Analysis Required]' :
+                               (health.operating_mode === 'LLM_ENABLED' ? '[Gemini Explanation with Audited Citations]' : '[Deterministic Engine Explanation]')}
                             </span>
                           </div>
                         )}
@@ -1008,11 +1008,11 @@
                         {/* Citations & Provenance */}
                         {msg.citations?.length > 0 && (
                           <div className="mt-3 pt-2 border-t border-slate-200/80 text-[11px] space-y-1 text-slate-600">
-                            <span className="font-bold text-indigo-900 block">Fuentes y procedencia:</span>
+                            <span className="font-bold text-indigo-900 block">Sources & Provenance:</span>
                             {msg.citations.map((c, idx) => (
                               <div key={idx} className="bg-white/80 p-1.5 rounded border border-slate-200">
-                                📌 <strong>{c.source_name}</strong> ({c.source_type})
-                                <div className="text-[10px] text-slate-500 font-mono">Condición: {c.filter_or_condition}</div>
+                                <strong>{c.source_name}</strong> ({c.source_type})
+                                <div className="text-[10px] text-slate-500 font-mono">Condition: {c.filter_or_condition}</div>
                               </div>
                             ))}
                           </div>
@@ -1020,14 +1020,14 @@
 
                         {msg.limitation && (
                           <div className="mt-2 text-[11px] text-amber-800 font-semibold bg-amber-50 p-1.5 rounded border border-amber-200">
-                            Limitación: {msg.limitation}
+                            Limitation: {msg.limitation}
                           </div>
                         )}
                       </div>
                     </div>
                   ))}
                   {chatLoading && (
-                    <div className="text-xs text-slate-400 italic">Consultando resultados auditados...</div>
+                    <div className="text-xs text-slate-400 italic">Consulting audited analytical results...</div>
                   )}
                 </div>
 
@@ -1040,7 +1040,7 @@
                     type="text"
                     value={chatInput}
                     onChange={e => setChatInput(e.target.value)}
-                    placeholder="Escribe una pregunta sobre los datos o solicita un cálculo con filtros..."
+                    placeholder="Ask a question regarding the data or request a filtered recalculation..."
                     className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                   <button
@@ -1048,7 +1048,7 @@
                     disabled={chatLoading || !chatInput.trim()}
                     className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow transition disabled:opacity-50"
                   >
-                    Enviar
+                    Send
                   </button>
                 </form>
               </div>
@@ -1058,9 +1058,9 @@
             {activeTab === 'provenance' && (
               <div className="space-y-6">
                 <div className="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
-                  <h2 className="text-base font-bold text-slate-900 mb-1">Cadena de Procedencia y Auditoría de Cifras</h2>
+                  <h2 className="text-base font-bold text-slate-900 mb-1">Provenance Chain & Audit Trail</h2>
                   <p className="text-xs text-slate-500">
-                    Trazabilidad de cada cifra: Archivo original ➔ Tabla ➔ Transformación ➔ Operación ➔ Validación ➔ Visualización.
+                    Complete end-to-end traceability for every figure: Raw File -&gt; Table Profile -&gt; Transformation -&gt; Analytical Operation -&gt; Validation Check -&gt; Visualization.
                   </p>
                 </div>
 
@@ -1079,7 +1079,7 @@
                   </div>
                 ) : (
                   <div className="bg-white p-8 text-center rounded-lg border border-slate-200 text-sm text-slate-500">
-                    Ejecuta el pipeline para generar la cadena de procedencia completa.
+                    Run the pipeline to generate the complete provenance chain.
                   </div>
                 )}
               </div>
@@ -1088,7 +1088,7 @@
 
           {/* Footer */}
           <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
-            Plataforma de Analítica Adaptativa Multiagente • Arquitectura modular con contratos Pydantic y DuckDB
+            Adaptive Multi-Agent Analytics Platform • Modular architecture with typed Pydantic contracts and DuckDB
           </footer>
         </div>
       );

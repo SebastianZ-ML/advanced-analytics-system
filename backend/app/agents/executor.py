@@ -1,5 +1,5 @@
 """
-Agent E: Analytical Executor (Agente Ejecutor Analítico).
+Agent E: Analytical Executor.
 Executes strictly registered operations from the approved AnalysisPlan.
 Produces typed AnalysisResult artifacts with parameters, coverage, and warnings.
 """
@@ -12,7 +12,7 @@ from app.engine.duckdb_engine import DuckDBAnalyticsEngine
 
 class AnalyticalExecutorAgent(BaseAgent):
     def __init__(self):
-        super().__init__(name="Agente Ejecutor Analítico", role="Ejecución matemática de operaciones registradas")
+        super().__init__(name="Analytical Executor Agent", role="Mathematical execution of registered operations")
 
     def execute_plan(
         self,
@@ -54,8 +54,8 @@ class AnalyticalExecutorAgent(BaseAgent):
                     method="Descriptive Aggregation",
                     parameters=op.parameters,
                     data_source_version=data_source_version,
-                    unit_of_measure="CLP / Unidades monetarias",
-                    time_period_covered="2026-01 a 2026-05",
+                    unit_of_measure="USD / Monetary units",
+                    time_period_covered="2026-01 to 2026-05",
                     calculated_values=calc_vals,
                     warnings=[]
                 ))
@@ -68,8 +68,8 @@ class AnalyticalExecutorAgent(BaseAgent):
                     method="Monthly Time Series Aggregation",
                     parameters=op.parameters,
                     data_source_version=data_source_version,
-                    unit_of_measure="CLP / Unidades monetarias",
-                    time_period_covered="2026-01 a 2026-05",
+                    unit_of_measure="USD / Monetary units",
+                    time_period_covered="2026-01 to 2026-05",
                     calculated_values={"monthly_series": monthly_trend},
                     warnings=[]
                 ))
@@ -92,7 +92,7 @@ class AnalyticalExecutorAgent(BaseAgent):
                     method="Period-over-Period Delta",
                     parameters=op.parameters,
                     data_source_version=data_source_version,
-                    unit_of_measure="CLP / Unidades monetarias",
+                    unit_of_measure="USD / Monetary units",
                     time_period_covered=f"{base_p} vs {curr_p}",
                     calculated_values={
                         "baseline_period": base_p,
@@ -126,10 +126,10 @@ class AnalyticalExecutorAgent(BaseAgent):
                     method="Additive Waterfall Dimension Decomposition",
                     parameters=op.parameters,
                     data_source_version=data_source_version,
-                    unit_of_measure="CLP / Unidades monetarias",
+                    unit_of_measure="USD / Monetary units",
                     time_period_covered=f"{base_p} vs {curr_p}",
                     calculated_values=breakdown,
-                    warnings=[] if breakdown["is_perfectly_reconciled"] else ["Diferencia de reconciliación superior al umbral de tolerancia."]
+                    warnings=[] if breakdown["is_perfectly_reconciled"] else ["Reconciliation discrepancy exceeds tolerance threshold."]
                 ))
 
             elif op.category == "customer_dynamics":
@@ -141,8 +141,8 @@ class AnalyticalExecutorAgent(BaseAgent):
                     method="First Purchase Cohort Comparison",
                     parameters=op.parameters,
                     data_source_version=data_source_version,
-                    unit_of_measure="CLP / Unidades monetarias",
-                    time_period_covered="2026-01 a 2026-05",
+                    unit_of_measure="USD / Monetary units",
+                    time_period_covered="2026-01 to 2026-05",
                     calculated_values=dynamics,
                     warnings=[]
                 ))
@@ -156,8 +156,8 @@ class AnalyticalExecutorAgent(BaseAgent):
                     method="Statistical Forecast Eligibility Audit",
                     parameters=op.parameters,
                     data_source_version=data_source_version,
-                    unit_of_measure="Elegibilidad metodológica",
-                    time_period_covered="Historial cerrado",
+                    unit_of_measure="Methodological eligibility",
+                    time_period_covered="Closed historical period",
                     calculated_values=eval_res,
                     warnings=[eval_res["reason"]] if not eval_res["eligible"] else []
                 ))

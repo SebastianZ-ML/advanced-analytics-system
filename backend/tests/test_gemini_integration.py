@@ -97,7 +97,7 @@ def test_01_startup_without_api_key(monkeypatch):
     provider = get_llm_provider(override_provider=NoLLMProvider())
     assert isinstance(provider, NoLLMProvider)
     assert provider.is_deterministic_fallback is True
-    assert provider.provider_name in ["demo", "Demostración sin LLM"]
+    assert provider.provider_name in ["demo", "Demo Without LLM"]
 
 
 # ---------------------------------------------------------------------------
@@ -111,7 +111,7 @@ def test_02_demo_without_llm_mode(setup_gemini_test_env):
     # Test structuring
     obj = provider.structure_objective(
         project_id="P_TEST_DEMO",
-        user_question="¿Por qué cayeron las ventas?",
+        user_question="Why did sales drop?",
         catalog_summary={}
     )
     assert isinstance(obj, ObjectiveSpec)
@@ -146,7 +146,7 @@ def test_03_structuring_agent_valid_spec_with_mock():
     expected_spec = ObjectiveSpec(
         schema_version="1.0",
         project_id="P_MOCK_1",
-        original_question="Ventas cayeron en mayo",
+        original_question="Sales dropped in May",
         operational_objective="Cuantificar la variación de facturación neta entre marzo y mayo de 2026",
         decision_to_inform="Focalizar plan de recuperación de clientes",
         primary_metric="net_sales",
@@ -159,7 +159,7 @@ def test_03_structuring_agent_valid_spec_with_mock():
     organizer = OrganizerAgent(override_provider=mock_provider)
     result = organizer.process_objective(
         project_id="P_MOCK_1",
-        user_question="Ventas cayeron en mayo"
+        user_question="Sales dropped in May"
     )
 
     assert result == expected_spec
@@ -181,7 +181,7 @@ def test_04_structuring_agent_rejects_malformed_json_and_handles_gracefully():
     # Must not raise an exception; must gracefully fall back to deterministic spec
     result = organizer.process_objective(
         project_id="P_MOCK_ERR",
-        user_question="Ventas cayeron en mayo"
+        user_question="Sales dropped in May"
     )
 
     assert isinstance(result, ObjectiveSpec)
@@ -199,9 +199,9 @@ def test_05_methodologist_rejects_nonexistent_columns():
     # Propose an operation requesting a column that doesn't exist
     illegal_op = OperationSpec(
         step_id="OP_01_METRIC_SUMMARY",
-        operation_name="Resumen descriptivo",
+        operation_name="Descriptive Summary",
         category="metric_summary",
-        description="Operación con columna fantasma",
+        description="Operation with phantom column",
         required_inputs=["orders_analytical"],
         parameters={"metric_columns": ["non_existent_fake_column_xyz"]},
         assumptions=[],
@@ -245,7 +245,7 @@ def test_05_methodologist_rejects_nonexistent_columns():
     objective = ObjectiveSpec(
         schema_version="1.0",
         project_id="P_TEST",
-        original_question="Ventas",
+        original_question="Sales",
         operational_objective="Diagnóstico",
         decision_to_inform="Decisión comercial",
         primary_metric="net_sales",
@@ -290,7 +290,7 @@ def test_06_methodologist_rejects_unregistered_method():
         schema_version="1.0",
         project_id="P_TEST",
         run_id="R_TEST",
-        title="Plan con Operación No Registrada",
+        title="Plan with Unregistered Operation",
         rationale="Prueba",
         operations=[unregistered_op],
         excluded_methods=[],
@@ -301,7 +301,7 @@ def test_06_methodologist_rejects_unregistered_method():
     objective = ObjectiveSpec(
         schema_version="1.0",
         project_id="P_TEST",
-        original_question="Ventas",
+        original_question="Sales",
         operational_objective="Diagnóstico",
         decision_to_inform="Decisión comercial",
         primary_metric="net_sales",
@@ -366,7 +366,7 @@ def test_08_validation_status_unalterable_by_llm():
     rejected_res = AnalysisResult(
         result_id="RES_REJECTED_BY_MATH",
         step_id="OP_FAIL",
-        operation_name="Cálculo Fallido",
+        operation_name="Failed Calculation",
         method="Method",
         parameters={},
         data_source_version="v1.0",
@@ -404,7 +404,7 @@ def test_09_interpreter_rejects_nonexistent_result_id():
     approved_res = AnalysisResult(
         result_id="RES_APPROVED_REAL",
         step_id="OP_01_METRIC_SUMMARY",
-        operation_name="Resumen",
+        operation_name="Summary",
         method="Aggregation",
         parameters={},
         data_source_version="v1.0",
@@ -416,18 +416,18 @@ def test_09_interpreter_rejects_nonexistent_result_id():
 
     hallucinated_finding = InsightFinding(
         id="FINDING_HALLUCINATED",
-        claim="Las ventas se desplomaron por factores no probados",
+        claim="Sales dropped due to unproven factors",
         result_id="RES_HALLUCINATED_DOES_NOT_EXIST",
         metric_name="net_sales",
         observed_value=-99999.0,
         is_empirically_proven=True,
-        evidence_text="Sin sustento real"
+        evidence_text="No real empirical support"
     )
 
     mock_provider.interpret_validated_results.return_value = InsightReport(
         schema_version="1.0",
         run_id="R_TEST_HALLUCINATION",
-        executive_summary="Resumen con alucinación",
+        executive_summary="Summary with hallucination",
         observed_findings=[hallucinated_finding],
         interpretations=[],
         unproven_hypotheses=[],
@@ -462,21 +462,21 @@ def test_10_assistant_executes_recalc_tool_for_filters(setup_gemini_test_env):
     df_orders["net_sales"] = pd.to_numeric(df_orders["net_sales"], errors="coerce").fillna(0.0)
 
     # Filter Mayorista / B2B channel
-    expected_sum = float(df_orders[df_orders["channel"] == "Mayorista / B2B"]["net_sales"].sum())
-    expected_count = int(len(df_orders[df_orders["channel"] == "Mayorista / B2B"]))
+    expected_sum = float(df_orders[df_orders["channel"] == "Wholesale / B2B"]["net_sales"].sum())
+    expected_count = int(len(df_orders[df_orders["channel"] == "Wholesale / B2B"]))
 
     assistant = ConversationalAssistantAgent()
     req = ChatRequest(
         project_id="P_TEST",
         run_id="R_TEST",
-        question="¿Cuánto vendió el canal Mayorista / B2B?",
-        active_filters={"channel": "Mayorista / B2B"}
+        question="How much did the Wholesale / B2B channel sell?",
+        active_filters={"channel": "Wholesale / B2B"}
     )
 
     test_obj = ObjectiveSpec(
         schema_version="1.0",
         project_id="P_TEST",
-        original_question="Ventas",
+        original_question="Sales",
         operational_objective="Diagnóstico",
         decision_to_inform="Decisión comercial",
         primary_metric="net_sales",
@@ -497,7 +497,7 @@ def test_10_assistant_executes_recalc_tool_for_filters(setup_gemini_test_env):
     assert len(ans.citations) > 0
     assert ans.citations[0].result_id == "RECALC_ON_DEMAND"
     assert f"${expected_sum:,.2f}" in ans.answer_text
-    assert f"{expected_count} pedidos" in ans.answer_text
+    assert f"{expected_count} completed orders" in ans.answer_text
 
 
 # ---------------------------------------------------------------------------
@@ -525,7 +525,7 @@ def test_11_assistant_explicit_refusal_for_missing_factors():
     test_obj = ObjectiveSpec(
         schema_version="1.0",
         project_id="P_TEST",
-        original_question="Ventas",
+        original_question="Sales",
         operational_objective="Diagnóstico",
         decision_to_inform="Decisión comercial",
         primary_metric="net_sales",
@@ -533,9 +533,9 @@ def test_11_assistant_explicit_refusal_for_missing_factors():
     )
 
     for unanswerable_q in [
-        "¿Qué impacto tuvieron los precios de la competencia en mayo?",
-        "¿El clima afectó la caída de ventas?",
-        "¿Cómo influyó la inflación nacional en el resultado?"
+        "What impact did competitor prices have in May?",
+        "Did weather affect the sales drop?",
+        "How did national inflation influence the results?"
     ]:
         req = ChatRequest(
             project_id="P_TEST",
@@ -555,7 +555,7 @@ def test_11_assistant_explicit_refusal_for_missing_factors():
         assert ans.query_type == "unanswerable_by_data"
         assert len(ans.citations) == 0
         assert ans.data_limitation_notice is not None
-        assert "no contienen información sobre" in ans.answer_text
+        assert "does not contain information regarding" in ans.answer_text
 
 
 # ---------------------------------------------------------------------------
@@ -640,7 +640,7 @@ def test_14_graceful_degradation_to_demo_on_fatal_llm_error():
     organizer = OrganizerAgent(override_provider=mock_provider)
     spec = organizer.process_objective(
         project_id="P_FATAL",
-        user_question="¿Por qué bajaron las ventas?"
+        user_question="Why did sales decrease?"
     )
 
     # Must fall back gracefully to deterministic spec
@@ -683,7 +683,7 @@ def test_15_numeric_values_unaltered_by_llm(setup_gemini_test_env):
     dash = result["dashboard"]
 
     # Verify current sales metric card matches May completed net sales exactly
-    curr_sales_card = next(c for c in dash["metric_cards"] if "Actuales" in c["title"])
+    curr_sales_card = next(c for c in dash["metric_cards"] if "Current" in c["title"] or "Actuales" in c["title"])
     extracted_val = float(curr_sales_card["value"].replace("$", "").replace(",", ""))
 
     may_orders = df_orders[(df_orders["status"] == "COMPLETED") & (df_orders["order_date"].str.startswith("2026-05"))]
@@ -696,7 +696,7 @@ def test_15_numeric_values_unaltered_by_llm(setup_gemini_test_env):
 # ---------------------------------------------------------------------------
 # Test 16: Real Gemini API call with structured output (Conditional)
 # ---------------------------------------------------------------------------
-@pytest.mark.skipif(not os.getenv("GEMINI_API_KEY"), reason="Requiere GEMINI_API_KEY en variables de entorno")
+@pytest.mark.skipif(not os.getenv("GEMINI_API_KEY"), reason="Requires GEMINI_API_KEY in environment variables")
 def test_16_real_gemini_call_when_key_present():
     real_api_key = os.getenv("GEMINI_API_KEY")
     assert real_api_key is not None and len(real_api_key) > 10
@@ -716,11 +716,16 @@ def test_16_real_gemini_call_when_key_present():
         }
     }
 
-    spec = provider.structure_objective(
-        project_id="P_REAL_GEMINI_TEST",
-        user_question="Las ventas bajaron fuertemente entre marzo y mayo de 2026. Necesito diagnosticar en qué canal se concentró la pérdida.",
-        catalog_summary=test_catalog
-    )
+    try:
+        spec = provider.structure_objective(
+            project_id="P_REAL_GEMINI_TEST",
+            user_question="Sales dropped sharply between March and May 2026. I need to diagnose which channel concentrated the loss.",
+            catalog_summary=test_catalog
+        )
+    except LLMProviderError as e:
+        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "quota" in str(e).lower():
+            pytest.skip(f"Gemini API rate limit or daily quota reached: {e}")
+        raise
 
     assert isinstance(spec, ObjectiveSpec)
     assert spec.schema_version in ["1.0", "1.0.0"]

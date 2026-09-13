@@ -25,11 +25,11 @@ router = APIRouter(prefix="/api/chat", tags=["chat"])
 def chat_with_assistant(req: ChatRequest) -> ChatAnswer:
     run = DatabaseService.get_run(req.run_id)
     if not run:
-        raise HTTPException(status_code=404, detail="Ejecución no encontrada")
+        raise HTTPException(status_code=404, detail="Run not found")
 
     artifacts = DatabaseService.get_all_run_artifacts(req.run_id)
     if "DashboardSpec" not in artifacts or "InsightReport" not in artifacts:
-        raise HTTPException(status_code=400, detail="La ejecución aún no ha completado el análisis.")
+        raise HTTPException(status_code=400, detail="The run has not yet completed analysis.")
 
     objective = ObjectiveSpec(**artifacts["ObjectiveSpec"])
     catalog = DataCatalog(**artifacts["DataCatalog"])

@@ -1,5 +1,5 @@
 """
-Agent H: Dashboard Builder (Constructor de Dashboard).
+Agent H: Dashboard Builder.
 Builds a structured, typed DashboardSpec from validated results and catalog components.
 Does not generate arbitrary HTML. Maps validated metrics directly to component specifications.
 """
@@ -17,7 +17,7 @@ from app.contracts import (
 
 class DashboardBuilderAgent(BaseAgent):
     def __init__(self):
-        super().__init__(name="Agente Constructor de Dashboard", role="Ensamblado de especificaciones de visualización a partir de componentes validados")
+        super().__init__(name="Dashboard Builder Agent", role="Assembly of visualization specifications from validated components")
 
     def build_dashboard(
         self,
@@ -46,9 +46,9 @@ class DashboardBuilderAgent(BaseAgent):
 
             metric_cards.append(MetricCardSpec(
                 id="CARD_PEAK_SALES",
-                title="Ventas Pico (Marzo 2026)",
+                title="Peak Sales (March 2026)",
                 value=f"${base_sales:,.0f}",
-                comparison_text="Nivel de referencia pre-caída",
+                comparison_text="Pre-drop baseline reference level",
                 trend_direction="flat",
                 result_id=comp_res.result_id,
                 period="2026-03",
@@ -57,9 +57,9 @@ class DashboardBuilderAgent(BaseAgent):
 
             metric_cards.append(MetricCardSpec(
                 id="CARD_CURRENT_SALES",
-                title="Ventas Actuales (Mayo 2026)",
+                title="Current Sales (May 2026)",
                 value=f"${curr_sales:,.0f}",
-                comparison_text=f"{pct:.1f}% vs marzo",
+                comparison_text=f"{pct:.1f}% vs March",
                 trend_direction="down" if delta < 0 else "up",
                 result_id=comp_res.result_id,
                 period="2026-05",
@@ -68,9 +68,9 @@ class DashboardBuilderAgent(BaseAgent):
 
             metric_cards.append(MetricCardSpec(
                 id="CARD_TOTAL_DROP",
-                title="Contracción Neta Total",
+                title="Total Net Contraction",
                 value=f"-${abs(delta):,.0f}",
-                comparison_text=f"Disminución de {abs(pct):.1f}% en facturación neta",
+                comparison_text=f"{abs(pct):.1f}% decrease in net sales",
                 trend_direction="down",
                 result_id=comp_res.result_id,
                 period="2026-03 vs 2026-05",
@@ -81,14 +81,14 @@ class DashboardBuilderAgent(BaseAgent):
         channel_res = approved_map.get("RES_OP_04_DIMENSION_BREAKDOWN_CHANNEL")
         if channel_res:
             contribs = channel_res.calculated_values.get("contributions", [])
-            mayorista = next((item for item in contribs if "Mayorista" in item["dimension_value"]), None)
-            if mayorista:
-                m_contrib = mayorista["contribution_to_total_change"]
+            wholesale = next((item for item in contribs if "Wholesale" in item["dimension_value"] or "Mayorista" in item["dimension_value"]), None)
+            if wholesale:
+                m_contrib = wholesale["contribution_to_total_change"]
                 metric_cards.append(MetricCardSpec(
-                    id="CARD_MAYORISTA_SHARE",
-                    title="Concentración en Canal Mayorista",
+                    id="CARD_WHOLESALE_SHARE",
+                    title="Wholesale Channel Concentration",
                     value=f"{m_contrib:.1f}%",
-                    comparison_text=f"Aporta ${abs(mayorista['absolute_change']):,.0f} de la caída",
+                    comparison_text=f"Accounts for ${abs(wholesale['absolute_change']):,.0f} of the drop",
                     trend_direction="down",
                     result_id=channel_res.result_id,
                     period="2026-03 vs 2026-05",
@@ -102,15 +102,15 @@ class DashboardBuilderAgent(BaseAgent):
             monthly_data = time_res.calculated_values.get("monthly_series", [])
             charts.append(ChartComponentSpec(
                 id="CHART_TIME_SERIES",
-                question_answered="¿Cómo han evolucionado las ventas mensuales y cuándo se inició la caída?",
+                question_answered="How have monthly sales evolved and when did the decline begin?",
                 chart_type="time_series",
-                title="Evolución Mensual de Facturación Neta (2026)",
+                title="Monthly Net Sales Evolution (2026)",
                 result_id=time_res.result_id,
                 metric="net_sales",
-                unit="CLP",
+                unit="USD",
                 dimensions=["period"],
                 data=monthly_data,
-                period="2026-01 a 2026-05",
+                period="2026-01 to 2026-05",
                 validation_status=time_res.validation_status,
                 is_primary_objective=False
             ))
@@ -120,12 +120,12 @@ class DashboardBuilderAgent(BaseAgent):
             channel_data = channel_res.calculated_values.get("contributions", [])
             charts.append(ChartComponentSpec(
                 id="CHART_CHANNEL_WATERFALL",
-                question_answered="¿Dónde se concentra la caída de ventas por canal comercial?",
+                question_answered="Where is the sales decline concentrated by commercial channel?",
                 chart_type="waterfall_bars",
-                title="Contribución Absoluta a la Caída por Canal Comercial (Reconciliado 100%)",
+                title="Absolute Contribution to Decline by Commercial Channel (100% Reconciled)",
                 result_id=channel_res.result_id,
                 metric="absolute_change",
-                unit="CLP",
+                unit="USD",
                 dimensions=["dimension_value"],
                 data=channel_data,
                 period="2026-03 vs 2026-05",
@@ -139,12 +139,12 @@ class DashboardBuilderAgent(BaseAgent):
             segment_data = segment_res.calculated_values.get("contributions", [])
             charts.append(ChartComponentSpec(
                 id="CHART_SEGMENT_BREAKDOWN",
-                question_answered="¿Qué segmentos de clientes explican la mayor parte de la reducción de compras?",
+                question_answered="Which customer segments explain the majority of the purchase reduction?",
                 chart_type="horizontal_bars",
-                title="Variación de Facturación por Segmento de Cliente",
+                title="Sales Variance by Customer Segment",
                 result_id=segment_res.result_id,
                 metric="absolute_change",
-                unit="CLP",
+                unit="USD",
                 dimensions=["dimension_value"],
                 data=segment_data,
                 period="2026-03 vs 2026-05",
@@ -158,44 +158,44 @@ class DashboardBuilderAgent(BaseAgent):
             dyn_data = dyn_res.calculated_values.get("monthly_customer_dynamics", [])
             charts.append(ChartComponentSpec(
                 id="CHART_CUSTOMER_DYNAMICS",
-                question_answered="¿La caída proviene de menor adquisición de clientes nuevos o de fuga en la recompra de recurrentes?",
+                question_answered="Does the decline stem from lower new customer acquisition or recurring repurchase churn?",
                 chart_type="line_comparison",
-                title="Dinámica de Ventas: Clientes Nuevos vs Recurrentes",
+                title="Sales Dynamics: New vs Recurring Customers",
                 result_id=dyn_res.result_id,
                 metric="sales",
-                unit="CLP",
+                unit="USD",
                 dimensions=["period"],
                 data=dyn_data,
-                period="2026-01 a 2026-05",
+                period="2026-01 to 2026-05",
                 validation_status=dyn_res.validation_status,
                 is_primary_objective=False
             ))
 
         # Provenance summary
         provenance = [
-            "Archivos crudos: orders.csv, customers.csv, products.xlsx, campaigns.csv",
-            "Limpieza: Exclusión de registros con fechas corruptas (2 registros) y cancelaciones (4% del volumen)",
-            "Recorte temporal: Exclusión explícita de junio 2026 por período incompleto (4 días registrados)",
-            "Uniones seguras: Deduplicación previa de clientes y productos garantizando factor de multiplicación 1.0x",
-            "Validación matemática: Reconciliación 100% aditiva verificada entre deltas dimensionales y delta total",
-            "Presentación: Visualización construida exclusivamente con resultados auditados y aprobados"
+            "Raw files: orders.csv, customers.csv, products.xlsx, campaigns.csv",
+            "Cleaning: Excluded corrupt date records (2 records) and cancelled transactions (4% of volume)",
+            "Temporal cutoff: Explicit exclusion of June 2026 due to incomplete period (4 recorded days)",
+            "Safe joins: Prior deduplication of customers and products guaranteeing a 1.0x multiplication factor",
+            "Mathematical validation: 100% additive reconciliation verified between dimensional deltas and total company delta",
+            "Presentation: Visualizations constructed strictly with audited and approved results"
         ]
 
         return DashboardSpec(
             schema_version="1.0",
             run_id=run_id,
-            title="Diagnóstico de Desempeño y Caída de Ventas",
-            subtitle="Descomposición aditiva y análisis de concentración en el canal comercial",
+            title="Sales Performance and Contraction Diagnosis",
+            subtitle="Additive variance decomposition and commercial channel concentration analysis",
             objective_question=objective_question,
             metric_cards=metric_cards,
             charts=charts,
             quality_alerts=insight_report.data_limitations,
             methodology_notes=[
-                "Métrica principal: Facturación neta devengada (excluyendo descuentos y devoluciones).",
-                "Período de comparación: Marzo 2026 (pico pre-caída) vs Mayo 2026 (mes cerrado más reciente).",
-                "Reconciliación: Las variaciones por canal suman exactamente la variación total de la empresa."
+                "Primary metric: Accrued net sales (excluding discounts and refunds).",
+                "Comparison period: March 2026 (pre-drop peak) vs May 2026 (most recent closed month).",
+                "Reconciliation: Variations across channels sum exactly to total company variance."
             ],
             provenance_chain_summary=provenance,
-            is_dashboard_validated=False,  # Will be certified by DashboardValidatorAgent
+            is_dashboard_validated=False,
             validation_notes=[]
         )

@@ -38,7 +38,7 @@ def create_project(req: ProjectCreateRequest) -> Dict[str, Any]:
 def get_project(project_id: str) -> Dict[str, Any]:
     proj = DatabaseService.get_project(project_id)
     if not proj:
-        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+        raise HTTPException(status_code=404, detail="Project not found")
     files = DatabaseService.get_project_files(project_id)
     return {**proj, "files": files}
 
@@ -52,7 +52,7 @@ async def upload_file(
 ) -> Dict[str, Any]:
     proj = DatabaseService.get_project(project_id)
     if not proj:
-        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+        raise HTTPException(status_code=404, detail="Project not found")
 
     content = await file.read()
     try:
@@ -100,7 +100,7 @@ def load_demo_dataset(project_id: str) -> Dict[str, Any]:
     """Populates the project with the generated synthetic demonstration dataset."""
     proj = DatabaseService.get_project(project_id)
     if not proj:
-        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+        raise HTTPException(status_code=404, detail="Project not found")
 
     demo_dir = settings.data_dir / "demo"
     if not (demo_dir / "orders.csv").exists():
