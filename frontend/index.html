@@ -13,6 +13,13 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <!-- Babel for TSX execution -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script>
+    Babel.registerPreset('custom-react', {
+      presets: [
+        [Babel.availablePresets['react'], { runtime: 'classic' }]
+      ]
+    });
+  </script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     body { font-family: 'Inter', sans-serif; }
@@ -25,7 +32,7 @@
 <body class="bg-slate-50 text-slate-900 min-h-screen">
   <div id="root"></div>
 
-  <script type="text/babel" data-presets="react,typescript">
+  <script type="text/babel" data-presets="custom-react">
     const { useState, useEffect, useRef } = React;
 
     // --- Main Application Component ---
@@ -221,6 +228,7 @@
                 </div>
               </div>
 
+              <div className="flex items-center space-x-4">
                 {/* Mode Status Pill */}
                 <div className={`flex items-center px-3 py-1 rounded-full text-xs font-semibold shadow-sm border ${
                   health.operating_mode === 'LLM_ENABLED'
