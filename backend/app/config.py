@@ -12,6 +12,7 @@ DATA_DIR = BASE_DIR / "data"
 STORAGE_DIR = BASE_DIR / "storage"
 RUNS_DIR = STORAGE_DIR / "runs"
 PROJECTS_DIR = STORAGE_DIR / "projects"
+SNAPSHOTS_DIR = STORAGE_DIR / "snapshots"
 DB_PATH = STORAGE_DIR / "analytics_system.sqlite"
 
 # Load local .env safely without requiring python-dotenv
@@ -33,6 +34,7 @@ if env_file.exists():
 STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 RUNS_DIR.mkdir(parents=True, exist_ok=True)
 PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+SNAPSHOTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 class Settings(BaseModel):
@@ -48,6 +50,7 @@ class Settings(BaseModel):
     storage_dir: Path = STORAGE_DIR
     runs_dir: Path = RUNS_DIR
     projects_dir: Path = PROJECTS_DIR
+    snapshots_dir: Path = SNAPSHOTS_DIR
     db_path: Path = DB_PATH
 
     # Security & Execution limits

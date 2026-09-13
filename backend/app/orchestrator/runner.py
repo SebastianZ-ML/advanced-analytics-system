@@ -33,6 +33,7 @@ from app.contracts import (
 from app.orchestrator.state_machine import PipelineStage, validate_transition
 from app.storage.db import DatabaseService
 from app.storage.files import FileManager
+from app.storage.snapshots import SnapshotManager
 
 
 class PipelineRunner:
@@ -132,11 +133,30 @@ class PipelineRunner:
 
             # 5. Data Preparation
             curr_stage = self._transition(run_id, curr_stage, PipelineStage.PREPARING, "Data Preparer Agent: Cleaning, deduplication, and controlled joins.")
+
+            # Derive cutoff_date dynamically from DQ report (no hardcoded dates)
+            cutoff_date = None
+            if dq_report.is_last_period_incomplete and dq_report.coverage_end:
+                try:
+                    end_dt = pd.to_datetime(dq_report.coverage_end)
+                    # Cutoff at the last day of the previous complete month
+                    first_of_last_month = end_dt.replace(day=1)
+                    cutoff_date = (first_of_last_month - pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+                except Exception:
+                    cutoff_date = None
+
             analytical_df, transformations = self.preparer.prepare_data(
                 tables=loaded_tables,
                 relationships=relationships,
                 exclude_cancelled=True,
-                cutoff_date="2026-05-31"
+                cutoff_date=cutoff_date
+            )
+            # Save immutable run snapshot
+            SnapshotManager.save_snapshot(
+                run_id=run_id,
+                project_id=project_id,
+                df=analytical_df,
+                custom_metadata={"transformations_count": len(transformations)}
             )
             DatabaseService.save_artifact(f"TRF_{run_id}", run_id, "TransformationRecords", [t.model_dump() for t in transformations])
 
@@ -182,6 +202,8 @@ class PipelineRunner:
                 )
 
             DatabaseService.save_artifact(f"VAL_{run_id}", run_id, "ValidationReport", validation_report.model_dump())
+            # Persist updated results with verified statuses (approved / rejected)
+            DatabaseService.save_artifact(f"RES_{run_id}", run_id, "AnalysisResults", [r.model_dump() for r in results])
 
             if validation_report.overall_status == "rejected":
                 fail_msg = f"Validation rejected after {repair_attempt} attempts. Failed checks: {', '.join(validation_report.failed_results)}"

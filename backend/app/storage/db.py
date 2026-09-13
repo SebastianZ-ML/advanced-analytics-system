@@ -74,6 +74,20 @@ def init_db() -> None:
         FOREIGN KEY (run_id) REFERENCES runs(run_id)
     );
 
+    CREATE TABLE IF NOT EXISTS run_snapshots (
+        snapshot_id TEXT PRIMARY KEY,
+        run_id TEXT NOT NULL,
+        project_id TEXT NOT NULL,
+        file_path TEXT NOT NULL,
+        file_hash TEXT NOT NULL,
+        row_count INTEGER NOT NULL,
+        column_count INTEGER NOT NULL,
+        schema_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (run_id) REFERENCES runs(run_id),
+        FOREIGN KEY (project_id) REFERENCES projects(project_id)
+    );
+
     CREATE TABLE IF NOT EXISTS llm_interactions (
         interaction_id TEXT PRIMARY KEY,
         project_id TEXT NOT NULL,
@@ -207,6 +221,45 @@ class DatabaseService:
         row = conn.execute("SELECT * FROM runs WHERE run_id = ?", (run_id,)).fetchone()
         conn.close()
         return dict(row) if row else None
+
+    @staticmethod
+    def save_snapshot_record(data: Dict[str, Any]) -> None:
+        conn = get_db_connection()
+        schema_str = json.dumps(data.get("schema_metadata", {}), default=str)
+        with conn:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO run_snapshots 
+                (snapshot_id, run_id, project_id, file_path, file_hash, row_count, column_count, schema_json, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    data["snapshot_id"],
+                    data["run_id"],
+                    data["project_id"],
+                    data["file_path"],
+                    data["file_hash"],
+                    data["row_count"],
+                    data["column_count"],
+                    schema_str,
+                    data["created_at"]
+                )
+            )
+        conn.close()
+
+    @staticmethod
+    def get_snapshot_record(run_id: str) -> Optional[Dict[str, Any]]:
+        conn = get_db_connection()
+        row = conn.execute(
+            "SELECT * FROM run_snapshots WHERE run_id = ? ORDER BY created_at DESC LIMIT 1",
+            (run_id,)
+        ).fetchone()
+        conn.close()
+        if not row:
+            return None
+        res = dict(row)
+        res["schema_metadata"] = json.loads(res.pop("schema_json", "{}"))
+        return res
 
     @staticmethod
     def save_artifact(artifact_id: str, run_id: str, artifact_type: str, data: Dict[str, Any]) -> None:

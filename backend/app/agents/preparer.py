@@ -19,7 +19,7 @@ class DataPreparerAgent(BaseAgent):
         tables: Dict[str, pd.DataFrame],
         relationships: List[RelationshipSpec],
         exclude_cancelled: bool = True,
-        cutoff_date: Optional[str] = "2026-05-31"
+        cutoff_date: Optional[str] = None
     ) -> Tuple[pd.DataFrame, List[TransformationRecord]]:
         """
         Executes clean data preparation through the deterministic engine.

@@ -1,0 +1,7 @@
+ward_id,ward_name,department,bed_count
+WRD-01,Cardiology Inpatient,Cardiovascular,40
+WRD-02,Intensive Care Unit (ICU),Critical Care,20
+WRD-03,General Surgery Ward,Surgery,50
+WRD-04,Oncology & Hematology,Internal Medicine,35
+WRD-05,Pediatrics Unit,Pediatrics,30
+WRD-06,Neurology & Stroke,Neurosciences,25

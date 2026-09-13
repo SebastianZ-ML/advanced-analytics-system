@@ -76,14 +76,30 @@ class InterpreterAgent(BaseAgent):
                     provenance_summary=provenance
                 )
 
-                # Gatekeeper verification: Ensure every finding cites an approved result_id
+                # Gatekeeper verification: Ensure every finding cites an approved result_id AND matches calculated numbers
+                res_map = {r.result_id: r for r in approved_results}
                 verified_findings = []
                 for f in report.observed_findings:
-                    if f.result_id in approved_ids:
-                        f.is_empirically_proven = True
-                        verified_findings.append(f)
-                    else:
+                    if f.result_id not in approved_ids:
                         print(f"[InterpreterAgent] Finding rejected for citing unapproved result_id: '{f.result_id}'")
+                        continue
+
+                    # Content verification: does the numerical value match the actual calculated value in the result?
+                    res = res_map.get(f.result_id)
+                    is_value_verified = False
+                    if res and f.metric_name:
+                        actual_val = res.calculated_values.get(f.metric_name)
+                        if actual_val is not None and isinstance(actual_val, (int, float)):
+                            if abs(float(f.observed_value) - float(actual_val)) < 1.0:
+                                is_value_verified = True
+                        elif isinstance(res.calculated_values, dict):
+                            for k, v in res.calculated_values.items():
+                                if isinstance(v, (int, float)) and abs(float(f.observed_value) - float(v)) < 1.0:
+                                    is_value_verified = True
+                                    break
+
+                    f.is_empirically_proven = is_value_verified
+                    verified_findings.append(f)
 
                 report.observed_findings = verified_findings
 

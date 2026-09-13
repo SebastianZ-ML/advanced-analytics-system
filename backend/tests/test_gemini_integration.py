@@ -723,8 +723,8 @@ def test_16_real_gemini_call_when_key_present():
             catalog_summary=test_catalog
         )
     except LLMProviderError as e:
-        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "quota" in str(e).lower():
-            pytest.skip(f"Gemini API rate limit or daily quota reached: {e}")
+        if any(term in str(e).lower() for term in ["429", "resource_exhausted", "quota", "ssl", "timeout", "read", "connection"]):
+            pytest.skip(f"Gemini API external network condition or quota reached: {e}")
         raise
 
     assert isinstance(spec, ObjectiveSpec)

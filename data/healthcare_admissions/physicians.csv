@@ -1,0 +1,7 @@
+physician_id,physician_name,specialty,ward_id
+DR-101,Dr. Sarah Adams,Cardiology,WRD-01
+DR-102,Dr. Marcus Vance,Critical Care,WRD-02
+DR-103,Dr. Elena Rostova,General Surgery,WRD-03
+DR-104,Dr. Tariq Al-Mansoor,Oncology,WRD-04
+DR-105,Dr. Chloe Dubois,Pediatrics,WRD-05
+DR-106,Dr. Kenji Sato,Neurology,WRD-06

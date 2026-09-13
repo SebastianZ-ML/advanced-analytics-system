@@ -47,7 +47,12 @@ class GeminiProvider(LLMProvider):
         if not self._api_key:
             raise LLMAuthenticationError("GEMINI_API_KEY is not configured.")
 
-        self._client = genai.Client(api_key=self._api_key)
+        http_options = types.HttpOptions(
+            timeout=float(min(self._timeout_seconds, 15.0)),
+            retry_options=types.HttpRetryOptions(attempts=1)
+        )
+        self._client = genai.Client(api_key=self._api_key, http_options=http_options)
+
 
     @property
     def provider_name(self) -> str:

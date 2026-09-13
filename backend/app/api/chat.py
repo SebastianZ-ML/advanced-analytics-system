@@ -17,6 +17,7 @@ from app.contracts import (
 )
 from app.storage.db import DatabaseService
 from app.storage.files import FileManager
+from app.storage.snapshots import SnapshotManager
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -37,17 +38,17 @@ def chat_with_assistant(req: ChatRequest) -> ChatAnswer:
     insight_report = InsightReport(**artifacts["InsightReport"])
     results = [AnalysisResult(**r) for r in artifacts.get("AnalysisResults", [])]
 
-    # Load analytical fact data if available or reconstruct from project files
-    files = DatabaseService.get_project_files(req.project_id)
-    fact_file = next((f for f in files if "order" in f["table_name"] or "venta" in f["table_name"]), None)
-    if fact_file:
-        df = FileManager.read_table_dataframe(fact_file["file_path"], sheet_name=fact_file["sheet_name"])
-        # Quick clean for filtering
-        for col in ["net_sales", "gross_sales", "units"]:
-            if col in df.columns:
-                df[col] = pd.to_numeric(df[col].astype(str).str.replace(",", "."), errors="coerce").fillna(0.0)
-    else:
-        df = pd.DataFrame()
+    # Load from immutable run snapshot to ensure exact consistency with pipeline
+    try:
+        df = SnapshotManager.load_snapshot(req.run_id)
+    except Exception:
+        # Fallback if snapshot not present
+        files = DatabaseService.get_project_files(req.project_id)
+        fact_file = next((f for f in files if "order" in f["table_name"] or "venta" in f["table_name"]), None)
+        if fact_file:
+            df = FileManager.read_table_dataframe(fact_file["file_path"], sheet_name=fact_file["sheet_name"])
+        else:
+            df = pd.DataFrame()
 
     assistant = ConversationalAssistantAgent()
     return assistant.answer_query(

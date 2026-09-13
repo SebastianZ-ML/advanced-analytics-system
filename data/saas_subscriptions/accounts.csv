@@ -1,0 +1,122 @@
+account_id,company_name,industry,country,seats
+ACC-0001,Cloud Systems,Logistics,Germany,10
+ACC-0002,Nova Tech,Logistics,United States,250
+ACC-0003,Zenith Labs,Cybersecurity,Canada,5
+ACC-0004,Apex Labs,Healthtech,United Kingdom,100
+ACC-0005,Hyper Systems,Cybersecurity,United Kingdom,250
+ACC-0006,Zenith Solutions,Healthtech,Canada,100
+ACC-0007,Pulse Systems,Healthtech,Brazil,50
+ACC-0008,Quantum Networks,Healthtech,United Kingdom,500
+ACC-0009,Quantum Labs,Fintech,Canada,5
+ACC-0010,Quantum Cloud,Cybersecurity,Germany,500
+ACC-0011,Apex AI,Cybersecurity,United States,50
+ACC-0012,Cloud Networks,Logistics,Australia,500
+ACC-0013,Quantum Analytics,Logistics,United States,5
+ACC-0014,Nova Networks,Fintech,United Kingdom,500
+ACC-0015,Cloud Solutions,Edtech,Canada,250
+ACC-0016,Quantum Tech,Edtech,Germany,10
+ACC-0017,Pulse Labs,Cybersecurity,Brazil,10
+ACC-0018,Zenith Analytics,Healthtech,Canada,50
+ACC-0019,Pulse Analytics,Logistics,Germany,500
+ACC-0020,Apex Analytics,Fintech,Germany,50
+ACC-0021,Pulse Labs,Healthtech,Australia,250
+ACC-0022,Quantum Analytics,Logistics,Canada,50
+ACC-0023,Vertex Tech,Edtech,United Kingdom,10
+ACC-0024,Zenith Networks,Logistics,Australia,50
+ACC-0025,Hyper Solutions,Edtech,United Kingdom,10
+ACC-0026,Zenith AI,Fintech,United States,500
+ACC-0027,Cloud Tech,Logistics,United Kingdom,500
+ACC-0028,Sphere Labs,E-commerce,Canada,100
+ACC-0029,Vertex Networks,Cybersecurity,United States,250
+ACC-0030,Cloud Networks,Logistics,Germany,5
+ACC-0031,Pulse Solutions,Healthtech,Canada,5
+ACC-0032,Pulse Tech,Cybersecurity,United States,500
+ACC-0033,Pulse Analytics,Healthtech,Germany,500
+ACC-0034,Data Systems,Cybersecurity,Germany,50
+ACC-0035,Apex Labs,Edtech,Germany,10
+ACC-0036,Apex Analytics,Cybersecurity,United States,5
+ACC-0037,Vertex Labs,Cybersecurity,United Kingdom,10
+ACC-0038,Vertex Tech,Edtech,Australia,500
+ACC-0039,Hyper Solutions,Healthtech,Australia,500
+ACC-0040,Nova Networks,E-commerce,Brazil,250
+ACC-0041,Quantum AI,Cybersecurity,Canada,5
+ACC-0042,Nova Analytics,Fintech,Germany,5
+ACC-0043,Hyper Analytics,Cybersecurity,United Kingdom,5
+ACC-0044,Cloud Systems,Healthtech,United States,5
+ACC-0045,Quantum Labs,Cybersecurity,United Kingdom,25
+ACC-0046,Vertex Analytics,Cybersecurity,United Kingdom,250
+ACC-0047,Hyper AI,Healthtech,Canada,500
+ACC-0048,Sphere Analytics,Fintech,United States,250
+ACC-0049,Sphere Cloud,E-commerce,Canada,50
+ACC-0050,Apex Labs,Fintech,Canada,250
+ACC-0051,Quantum Labs,Healthtech,United Kingdom,10
+ACC-0052,Zenith AI,Healthtech,Canada,10
+ACC-0053,Pulse AI,Healthtech,United States,50
+ACC-0054,Zenith Labs,Fintech,Brazil,100
+ACC-0055,Apex Labs,Healthtech,United Kingdom,50
+ACC-0056,Vertex AI,Healthtech,Canada,5
+ACC-0057,Data Solutions,Fintech,Canada,25
+ACC-0058,Vertex Networks,E-commerce,Brazil,250
+ACC-0059,Zenith AI,Healthtech,United Kingdom,25
+ACC-0060,Nova Systems,Cybersecurity,Brazil,100
+ACC-0061,Apex Cloud,Fintech,United States,100
+ACC-0062,Vertex Tech,Fintech,Australia,5
+ACC-0063,Data Labs,Cybersecurity,United States,250
+ACC-0064,Nova Solutions,Fintech,Australia,10
+ACC-0065,Hyper Systems,Cybersecurity,United States,50
+ACC-0066,Hyper Cloud,Edtech,United Kingdom,250
+ACC-0067,Quantum Analytics,Edtech,Canada,10
+ACC-0068,Pulse AI,Edtech,United States,5
+ACC-0069,Vertex Labs,Fintech,Australia,10
+ACC-0070,Zenith Networks,Healthtech,Germany,5
+ACC-0071,Nova Cloud,Edtech,United Kingdom,50
+ACC-0072,Zenith Networks,Cybersecurity,Brazil,100
+ACC-0073,Apex Networks,Logistics,United States,10
+ACC-0074,Pulse Labs,Fintech,Brazil,100
+ACC-0075,Data Networks,Edtech,Australia,10
+ACC-0076,Quantum Analytics,Logistics,Brazil,500
+ACC-0077,Pulse AI,Edtech,United States,5
+ACC-0078,Sphere Networks,Fintech,United States,25
+ACC-0079,Data Networks,Healthtech,Brazil,50
+ACC-0080,Zenith Solutions,Cybersecurity,United States,5
+ACC-0081,Cloud Tech,Cybersecurity,United States,500
+ACC-0082,Quantum Tech,E-commerce,United Kingdom,5
+ACC-0083,Pulse Cloud,Fintech,Germany,10
+ACC-0084,Nova Labs,Edtech,Australia,500
+ACC-0085,Sphere Tech,Healthtech,United Kingdom,500
+ACC-0086,Data Solutions,Fintech,United Kingdom,250
+ACC-0087,Quantum Solutions,Logistics,Brazil,500
+ACC-0088,Nova Networks,Healthtech,Brazil,5
+ACC-0089,Sphere Systems,E-commerce,United Kingdom,10
+ACC-0090,Vertex Cloud,Edtech,United Kingdom,10
+ACC-0091,Apex Analytics,E-commerce,Germany,25
+ACC-0092,Cloud Networks,Edtech,Brazil,100
+ACC-0093,Sphere Cloud,Fintech,United States,25
+ACC-0094,Data Networks,Fintech,United States,100
+ACC-0095,Sphere Cloud,Logistics,Germany,50
+ACC-0096,Hyper Labs,E-commerce,Australia,10
+ACC-0097,Pulse Systems,Logistics,Canada,5
+ACC-0098,Zenith Analytics,Edtech,Canada,5
+ACC-0099,Quantum Cloud,Logistics,United States,250
+ACC-0100,Pulse Networks,Logistics,Canada,25
+ACC-0101,Sphere Networks,Cybersecurity,United Kingdom,10
+ACC-0102,Sphere Solutions,Logistics,Brazil,10
+ACC-0103,Hyper Networks,E-commerce,Australia,500
+ACC-0104,Apex Networks,Edtech,United Kingdom,50
+ACC-0105,Hyper Cloud,E-commerce,Canada,50
+ACC-0106,Nova AI,Logistics,United Kingdom,250
+ACC-0107,Cloud Networks,Cybersecurity,Brazil,250
+ACC-0108,Hyper Cloud,Fintech,United Kingdom,250
+ACC-0109,Pulse Analytics,Healthtech,United Kingdom,5
+ACC-0110,Apex Analytics,E-commerce,Australia,500
+ACC-0111,Cloud AI,E-commerce,Brazil,100
+ACC-0112,Nova Solutions,E-commerce,Canada,10
+ACC-0113,Data Systems,Fintech,Canada,10
+ACC-0114,Data AI,Fintech,Australia,10
+ACC-0115,Cloud AI,Healthtech,Canada,250
+ACC-0116,Zenith Cloud,E-commerce,Australia,500
+ACC-0117,Zenith Solutions,Cybersecurity,Canada,10
+ACC-0118,Vertex AI,Edtech,United Kingdom,500
+ACC-0119,Pulse AI,Logistics,United Kingdom,25
+ACC-0120,Vertex Labs,Logistics,Germany,10
+ACC-0006,Conflicting Account HQ,Agriculture,Mars,99999

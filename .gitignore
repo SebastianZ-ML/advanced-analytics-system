@@ -17,11 +17,8 @@ venv/
 .venv/
 
 # Local databases & run storage
-storage/*.sqlite
-storage/*.sqlite*
-storage/*.db
-storage/runs/
-storage/projects/
+/storage/
+*.parquet
 *.sqlite
 *.db
 

@@ -21,6 +21,8 @@ from app.contracts import (
     TableProfile,
     TransformationRecord,
 )
+from app.quality.quarantine import QuarantineManager
+
 
 
 class DuckDBAnalyticsEngine:
@@ -241,7 +243,7 @@ class DuckDBAnalyticsEngine:
                         days_in_last_month = last_month_dates.dt.day.nunique()
                         total_days_month = last_month.end_time.day
 
-                        if days_in_last_month < 15 and days_in_last_month < total_days_month:
+                        if dt_series.nunique() > 1 and days_in_last_month < 15 and days_in_last_month < total_days_month:
                             is_last_period_incomplete = True
                             incomplete_details = (
                                 f"The final month ({last_month}) contains only {days_in_last_month} days of records. "
@@ -397,7 +399,8 @@ class DuckDBAnalyticsEngine:
         tables: Dict[str, pd.DataFrame],
         relationships: List[RelationshipSpec],
         exclude_cancelled: bool = True,
-        cutoff_date: Optional[str] = "2026-05-31"  # Cutoff incomplete June
+        cutoff_date: Optional[str] = None,
+        semantic_model: Optional[Any] = None
     ) -> Tuple[pd.DataFrame, List[TransformationRecord]]:
         """
         Execute clean, fully tracked and reproducible data preparation:
@@ -496,10 +499,33 @@ class DuckDBAnalyticsEngine:
                 ))
                 step_idx += 1
 
-        # Numeric casts on fact table
-        for num_col in ["units", "unit_price", "discount_amount", "gross_sales", "net_sales"]:
-            if num_col in df_orders.columns:
-                df_orders[num_col] = pd.to_numeric(df_orders[num_col].astype(str).str.replace(",", "."), errors="coerce").fillna(0.0)
+        # Numeric casts and auditable quarantine on fact table
+        numeric_cols_to_audit = [
+            c for c in df_orders.columns
+            if c in ["units", "unit_price", "discount_amount", "gross_sales", "net_sales"]
+            or (semantic_model and hasattr(semantic_model, "metrics") and any(m.name == c for m in semantic_model.metrics))
+            or pd.api.types.is_numeric_dtype(df_orders[c])
+        ]
+        df_orders, num_quarantined = QuarantineManager.audit_and_clean_numerics(
+            df=df_orders,
+            table_name=fact_key,
+            numeric_columns=numeric_cols_to_audit
+        )
+        if num_quarantined:
+            records.append(TransformationRecord(
+                transformation_id=f"TRF_{step_idx:02d}_QUARANTINE_NUMERICS",
+                step_index=step_idx,
+                input_table=fact_key,
+                output_table=fact_key,
+                operation="quarantine_corrupt_numerics",
+                columns_affected=list({q.affected_column for q in num_quarantined}),
+                rationale="Isolate non-numeric corrupt values into quarantine to preserve mathematical integrity.",
+                rows_before=len(df_orders) + len(num_quarantined),
+                rows_after=len(df_orders),
+                rows_excluded=len(num_quarantined),
+                exclusion_reason="Unparseable non-numeric characters detected"
+            ))
+            step_idx += 1
 
         # Baseline net_sales metric to reconcile across joins
         baseline_net_sales = float(df_orders["net_sales"].sum()) if "net_sales" in df_orders.columns else 0.0
@@ -520,10 +546,29 @@ class DuckDBAnalyticsEngine:
             if left_key not in analytical_df.columns or right_key not in dim_df.columns:
                 continue
 
-            # Ensure right key is deduplicated
+            # Ensure right key is deduplicated with conflict isolation
             dim_rows_before = len(dim_df)
-            dim_df_dedup = dim_df.drop_duplicates(subset=[right_key], keep="first").copy()
+            dim_df_dedup, conflict_quarantined = QuarantineManager.isolate_conflicting_duplicates(
+                df=dim_df,
+                table_name=dim_name,
+                key_column=right_key
+            )
             dups_removed = dim_rows_before - len(dim_df_dedup)
+            if conflict_quarantined:
+                records.append(TransformationRecord(
+                    transformation_id=f"TRF_{step_idx:02d}_QUARANTINE_CONFLICTING_DUPS",
+                    step_index=step_idx,
+                    input_table=dim_name,
+                    output_table=f"{dim_name}_clean",
+                    operation="quarantine_conflicting_duplicates",
+                    columns_affected=[right_key],
+                    rationale=f"Isolate conflicting duplicate records for {right_key} into quarantine rather than picking arbitrary first row.",
+                    rows_before=dim_rows_before,
+                    rows_after=len(dim_df_dedup),
+                    rows_excluded=len(conflict_quarantined),
+                    exclusion_reason="Conflicting attribute values for identical dimension key"
+                ))
+                step_idx += 1
 
             # Left join
             rows_before_join = len(analytical_df)
@@ -665,53 +710,101 @@ class DuckDBAnalyticsEngine:
         }
 
     @staticmethod
-    def calculate_customer_dynamics(df: pd.DataFrame) -> Dict[str, Any]:
+    def calculate_customer_dynamics(
+        df: pd.DataFrame,
+        customer_id_col: Optional[str] = None,
+        date_col: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Calculates new vs recurring customer sales and order counts per month.
         Definition:
-        - Customer first order date = min(order_date_clean) across all history.
-        - An order is 'new_customer' if its order_date == customer_first_order_date.
+        - Customer first order date = min(date_col) across all history.
+        - An order is 'new_customer' if its date == customer_first_order_date.
         - Otherwise, 'recurring_customer'.
         """
         df_copy = df.copy()
-        first_dates = df_copy.groupby("customer_id")["order_date_clean"].min().to_dict()
-        df_copy["customer_first_date"] = df_copy["customer_id"].map(first_dates)
-        df_copy["is_new_customer"] = df_copy["order_date_clean"].dt.date == df_copy["customer_first_date"].dt.date
+        cust_col = customer_id_col if (customer_id_col and customer_id_col in df_copy.columns) else next((c for c in df_copy.columns if "cust" in c.lower() or "client" in c.lower() or "user" in c.lower()), "customer_id")
+        dt_col = date_col if (date_col and date_col in df_copy.columns) else ("order_date_clean" if "order_date_clean" in df_copy.columns else next((c for c in df_copy.columns if "date" in c.lower()), df_copy.columns[0]))
 
-        df_copy["year_month"] = df_copy["order_date_clean"].dt.strftime("%Y-%m")
+        if cust_col not in df_copy.columns or dt_col not in df_copy.columns:
+            return {"monthly_customer_dynamics": []}
+
+        first_dates = df_copy.groupby(cust_col)[dt_col].min().to_dict()
+        df_copy["customer_first_date"] = df_copy[cust_col].map(first_dates)
+        try:
+            df_copy["is_new_customer"] = df_copy[dt_col].dt.date == df_copy["customer_first_date"].dt.date
+            df_copy["year_month"] = df_copy[dt_col].dt.strftime("%Y-%m")
+        except Exception:
+            df_copy["is_new_customer"] = df_copy[dt_col] == df_copy["customer_first_date"]
+            df_copy["year_month"] = df_copy[dt_col].astype(str).str.slice(0, 7)
+
+        metric_col = "net_sales" if "net_sales" in df_copy.columns else next((c for c in df_copy.columns if pd.api.types.is_numeric_dtype(df_copy[c]) and "id" not in c.lower()), None)
 
         monthly_dyn = []
         for ym, group in df_copy.groupby("year_month"):
             new_orders = group[group["is_new_customer"]]
             rec_orders = group[~group["is_new_customer"]]
 
+            new_sales = round(float(new_orders[metric_col].sum()), 2) if metric_col else 0.0
+            rec_sales = round(float(rec_orders[metric_col].sum()), 2) if metric_col else 0.0
+            tot_sales = round(float(group[metric_col].sum()), 2) if metric_col else 0.0
+
             monthly_dyn.append({
-                "period": ym,
-                "new_customers_sales": round(float(new_orders["net_sales"].sum()), 2),
-                "recurring_customers_sales": round(float(rec_orders["net_sales"].sum()), 2),
+                "period": str(ym),
+                "new_customers_sales": new_sales,
+                "recurring_customers_sales": rec_sales,
                 "new_customers_orders": int(len(new_orders)),
                 "recurring_customers_orders": int(len(rec_orders)),
-                "total_sales": round(float(group["net_sales"].sum()), 2)
+                "total_sales": tot_sales
             })
 
         return {"monthly_customer_dynamics": monthly_dyn}
 
     @staticmethod
-    def calculate_monthly_trend(df: pd.DataFrame) -> List[Dict[str, Any]]:
-        """Monthly aggregated net sales, gross sales, units and order count."""
+    def calculate_monthly_trend(
+        df: pd.DataFrame,
+        date_col: Optional[str] = None,
+        metric_col: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Monthly aggregated metrics without hardcoding column names."""
+        if df.empty:
+            return []
+
         df_copy = df.copy()
-        df_copy["year_month"] = pd.to_datetime(df_copy["order_date_clean"]).dt.strftime("%Y-%m")
+
+        # Resolve date column
+        if not date_col or date_col not in df_copy.columns:
+            date_candidates = [c for c in df_copy.columns if "date" in c.lower() or "fecha" in c.lower() or "time" in c.lower()]
+            date_col = date_candidates[0] if date_candidates else df_copy.columns[0]
+
+        parsed_dt = pd.to_datetime(df_copy[date_col], errors="coerce")
+        df_copy["year_month"] = parsed_dt.dt.strftime("%Y-%m")
+        df_copy = df_copy[df_copy["year_month"].notna()]
+        if df_copy.empty:
+            return []
+
+        # Resolve primary metric
+        if not metric_col or metric_col not in df_copy.columns:
+            if "net_sales" in df_copy.columns:
+                metric_col = "net_sales"
+            else:
+                num_cols = [c for c in df_copy.columns if pd.api.types.is_numeric_dtype(df_copy[c]) and "id" not in c.lower() and c != "year_month"]
+                metric_col = num_cols[0] if num_cols else df_copy.columns[0]
 
         res = []
         for ym, grp in df_copy.groupby("year_month"):
-            res.append({
+            entry = {
                 "period": ym,
-                "net_sales": round(float(grp["net_sales"].sum()), 2),
-                "gross_sales": round(float(grp["gross_sales"].sum()), 2),
+                metric_col: round(float(grp[metric_col].sum()), 2) if metric_col in grp.columns and pd.api.types.is_numeric_dtype(grp[metric_col]) else 0.0,
+                "gross_sales": round(float(grp["gross_sales"].sum()), 2) if "gross_sales" in grp.columns else 0.0,
                 "units": int(grp["units"].sum()) if "units" in grp.columns else 0,
                 "order_count": int(len(grp)),
-                "avg_order_value": round(float(grp["net_sales"].mean()), 2)
-            })
+                "avg_order_value": round(float(grp[metric_col].mean()), 2) if metric_col in grp.columns and pd.api.types.is_numeric_dtype(grp[metric_col]) else 0.0
+            }
+            # Maintain backward compatibility alias
+            if metric_col != "net_sales":
+                entry["net_sales"] = entry[metric_col]
+            res.append(entry)
         return sorted(res, key=lambda x: x["period"])
 
     @staticmethod
