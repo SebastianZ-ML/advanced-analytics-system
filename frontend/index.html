@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Adaptive Multi-Agent Advanced Analytics Platform</title>
+  <title>Adaptive Multi-Agent Analytics Platform</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Chart.js -->
@@ -22,20 +22,399 @@
   </script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    body { font-family: 'Inter', sans-serif; }
-    .badge-info { background-color: #e0f2fe; color: #0369a1; }
-    .badge-warning { background-color: #fef3c7; color: #b45309; }
-    .badge-blocking { background-color: #fee2e2; color: #b91c1c; }
-    .badge-success { background-color: #dcfce7; color: #15803d; }
+
+    :root {
+      --bg-canvas: #0A0A0B;
+      --bg-surface: #121214;
+      --bg-surface-elevated: #18181B;
+      --bg-card: rgba(255, 255, 255, 0.035);
+      --bg-card-hover: rgba(255, 255, 255, 0.055);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-hover: rgba(255, 255, 255, 0.14);
+      --accent-blue: #2997FF;
+      --accent-blue-hover: #1A85FF;
+      --accent-glow: rgba(41, 151, 255, 0.25);
+      --text-primary: #F5F5F7;
+      --text-secondary: #A1A1A6;
+      --text-tertiary: #6E6E73;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", sans-serif;
+      background-color: var(--bg-canvas);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Subtle custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Apple Liquid Glass Utility */
+    .glass-surface {
+      background: rgba(18, 18, 20, 0.72);
+      backdrop-filter: blur(24px) saturate(140%);
+      -webkit-backdrop-filter: blur(24px) saturate(140%);
+    }
+
+    .glass-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .glass-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+    }
+
+    .glass-modal {
+      background: rgba(22, 22, 24, 0.88);
+      backdrop-filter: blur(32px) saturate(150%);
+      -webkit-backdrop-filter: blur(32px) saturate(150%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 24px 64px -8px rgba(0, 0, 0, 0.75);
+    }
+
+    /* Apple Status Pills */
+    .pill-accent {
+      background: rgba(41, 151, 255, 0.12);
+      color: #2997FF;
+      border: 1px solid rgba(41, 151, 255, 0.28);
+    }
+    .pill-success {
+      background: rgba(50, 215, 75, 0.12);
+      color: #32D74B;
+      border: 1px solid rgba(50, 215, 75, 0.28);
+    }
+    .pill-warning {
+      background: rgba(255, 159, 10, 0.12);
+      color: #FF9F0A;
+      border: 1px solid rgba(255, 159, 10, 0.28);
+    }
+    .pill-danger {
+      background: rgba(255, 69, 58, 0.12);
+      color: #FF453A;
+      border: 1px solid rgba(255, 69, 58, 0.28);
+    }
+    .pill-neutral {
+      background: rgba(255, 255, 255, 0.06);
+      color: #A1A1A6;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Buttons */
+    .btn-apple-primary {
+      background: var(--accent-blue);
+      color: #FFFFFF;
+      border-radius: 12px;
+      font-weight: 500;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 2px 8px rgba(41, 151, 255, 0.3);
+    }
+    .btn-apple-primary:hover:not(:disabled) {
+      background: var(--accent-blue-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(41, 151, 255, 0.4);
+    }
+    .btn-apple-primary:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-apple-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-primary);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      font-weight: 500;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-apple-secondary:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.09);
+      border-color: rgba(255, 255, 255, 0.18);
+      transform: translateY(-1px);
+    }
+    .btn-apple-secondary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* Inputs */
+    .input-apple {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-primary);
+      border-radius: 12px;
+      height: 42px;
+      padding: 0 14px;
+      font-size: 13px;
+      transition: all 0.18s ease;
+    }
+    .input-apple:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .input-apple::placeholder {
+      color: var(--text-tertiary);
+    }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen">
-  <div id="root"></div>
+<body class="bg-[#0A0A0B] text-[#F5F5F7] min-h-screen flex antialiased selection:bg-[#2997FF]/30 selection:text-[#FFFFFF]">
+  <div id="root" class="flex-1 flex flex-col"></div>
 
   <script type="text/babel" data-presets="custom-react">
     const { useState, useEffect, useRef } = React;
 
-    // --- Main Application Component ---
+    // --- Minimal Monochromatic SVG Icons (1.5px stroke) ---
+    const IconFolder = () => (
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
+      </svg>
+    );
+
+    const IconTable = () => (
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/>
+      </svg>
+    );
+
+    const IconTarget = () => (
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+      </svg>
+    );
+
+    const IconShieldCheck = () => (
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>
+      </svg>
+    );
+
+    const IconLayers = () => (
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
+      </svg>
+    );
+
+    const IconActivity = () => (
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+    );
+
+    const IconDashboard = () => (
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>
+      </svg>
+    );
+
+    const IconMessage = () => (
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+    );
+
+    const IconGitCommit = () => (
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="3"/><line x1="3" x2="9" y1="12" y2="12"/><line x1="15" x2="21" y1="12" y2="12"/>
+      </svg>
+    );
+
+    const IconPlus = () => (
+      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    );
+
+    const IconDownload = () => (
+      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+    );
+
+    const IconPlay = () => (
+      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+        <polygon points="5 3 19 12 5 21 5 3"/>
+      </svg>
+    );
+
+    const IconAlert = () => (
+      <svg className="w-4 h-4 text-[#FF9F0A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+    );
+
+    const IconCheck = () => (
+      <svg className="w-3.5 h-3.5 text-[#32D74B]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+    );
+
+    // --- Dynamic Canvas Charts Component (Apple macOS Dark Theme) ---
+    function DashboardCharts({ charts }) {
+      const chartRefs = useRef([]);
+
+      useEffect(() => {
+        if (!charts || charts.length === 0) return;
+
+        const chartInstances = [];
+
+        charts.forEach((chart, idx) => {
+          const canvas = chartRefs.current[idx];
+          if (!canvas) return;
+
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return;
+
+          // Prepare data
+          const labels = chart.data.map(d => d.channel || d.period || Object.values(d)[0]);
+          const metricKeys = Object.keys(chart.data[0] || {}).filter(k => 
+            typeof chart.data[0][k] === 'number' && !k.includes('order_count')
+          );
+          const primaryKey = metricKeys[0] || 'net_sales';
+          const values = chart.data.map(d => d[primaryKey] || 0);
+
+          const isTrend = chart.id.includes('trend') || labels.some(l => typeof l === 'string' && l.startsWith('2026-'));
+
+          const instance = new Chart(ctx, {
+            type: isTrend ? 'line' : 'bar',
+            data: {
+              labels: labels,
+              datasets: [{
+                label: primaryKey.replace('_', ' ').toUpperCase(),
+                data: values,
+                backgroundColor: isTrend 
+                  ? 'rgba(41, 151, 255, 0.12)' 
+                  : values.map(v => v < 0 ? 'rgba(255, 69, 58, 0.65)' : 'rgba(41, 151, 255, 0.65)'),
+                borderColor: isTrend ? '#2997FF' : values.map(v => v < 0 ? '#FF453A' : '#2997FF'),
+                borderWidth: isTrend ? 2 : 1,
+                fill: isTrend,
+                tension: 0.35,
+                borderRadius: isTrend ? 0 : 8,
+                pointBackgroundColor: '#2997FF',
+                pointBorderColor: '#0A0A0B',
+                pointBorderWidth: 2,
+                pointRadius: isTrend ? 4 : 0,
+                pointHoverRadius: 6
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  backgroundColor: 'rgba(22, 22, 24, 0.9)',
+                  titleColor: '#F5F5F7',
+                  bodyColor: '#A1A1A6',
+                  borderColor: 'rgba(255, 255, 255, 0.12)',
+                  borderWidth: 1,
+                  padding: 10,
+                  cornerRadius: 10,
+                  displayColors: false,
+                  callbacks: {
+                    label: function(context) {
+                      const val = context.parsed.y;
+                      return `${context.dataset.label}: $${val.toLocaleString()}`;
+                    }
+                  }
+                }
+              },
+              scales: {
+                x: {
+                  grid: { display: false },
+                  ticks: { color: '#6E6E73', font: { size: 11, family: '-apple-system, sans-serif' } }
+                },
+                y: {
+                  grid: { color: 'rgba(255, 255, 255, 0.04)' },
+                  ticks: { 
+                    color: '#6E6E73', 
+                    font: { size: 11, family: '-apple-system, sans-serif' },
+                    callback: (v) => '$' + (v >= 1000 ? (v / 1000) + 'k' : v)
+                  }
+                }
+              }
+            }
+          });
+
+          chartInstances.push(instance);
+        });
+
+        return () => {
+          chartInstances.forEach(ci => ci.destroy());
+        };
+      }, [charts]);
+
+      return (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {charts.map((chart, idx) => (
+            <div key={chart.id} className="glass-card p-6 flex flex-col justify-between">
+              <div>
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h4 className="text-sm font-semibold tracking-tight text-[#F5F5F7]">{chart.title}</h4>
+                    <p className="text-xs text-[#8E8E93] mt-0.5">{chart.question_answered}</p>
+                  </div>
+                  {chart.is_primary_objective && (
+                    <span className="pill-accent text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full">
+                      Primary Objective
+                    </span>
+                  )}
+                </div>
+
+                {/* Canvas chart */}
+                <div className="h-56 w-full relative mb-5">
+                  <canvas ref={el => chartRefs.current[idx] = el}></canvas>
+                </div>
+              </div>
+
+              {/* Data Table Breakdown */}
+              <div className="overflow-x-auto border-t border-[rgba(255,255,255,0.06)] pt-4">
+                <table className="w-full text-xs text-left">
+                  <thead>
+                    <tr className="text-[#6E6E73] uppercase tracking-wider text-[10px] border-b border-[rgba(255,255,255,0.06)]">
+                      {Object.keys(chart.data[0] || {}).map(k => (
+                        <th key={k} className="py-2 px-3 font-medium">{k.replace('_', ' ')}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[rgba(255,255,255,0.04)] text-[#A1A1A6]">
+                    {chart.data.map((row, rIdx) => (
+                      <tr key={rIdx} className="hover:bg-[rgba(255,255,255,0.025)] transition">
+                        {Object.entries(row).map(([k, v]) => (
+                          <td key={k} className="py-2 px-3 font-mono text-[11px]">
+                            {typeof v === 'number' 
+                              ? (k.includes('pct') || k.includes('percentage') || k.includes('contrib') ? `${v}%` : `$${v.toLocaleString()}`) 
+                              : String(v)}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // --- Main Application ---
     function App() {
       const [activeTab, setActiveTab] = useState('projects');
       const [health, setHealth] = useState({ is_demo_mode: true, mode_label: 'Loading...', operating_mode: 'DEMO_WITHOUT_LLM' });
@@ -48,14 +427,13 @@
       const [chatMessages, setChatMessages] = useState([
         {
           sender: 'assistant',
-          text: 'Hello. I am the grounded conversational analytics assistant. You can ask me about decline drivers, request recalculated metrics with custom filters, or inspect data provenance.',
+          text: 'Welcome. I am your grounded analytical assistant. You can ask me questions about diagnostic drivers, explore recalculations with real data filters, or verify empirical citations.',
           citations: []
         }
       ]);
       const [chatInput, setChatInput] = useState('');
       const [chatLoading, setChatLoading] = useState(false);
 
-      // Fetch health and projects on mount
       useEffect(() => {
         fetch('/api/health')
           .then(r => r.json())
@@ -213,883 +591,932 @@
         }
       };
 
+      const navigationSections = [
+        {
+          title: "WORKSPACE & DATA",
+          items: [
+            { id: 'projects', label: 'Projects & Setup', icon: <IconFolder /> },
+            { id: 'catalog', label: 'Tables & Profiling', icon: <IconTable /> },
+          ]
+        },
+        {
+          title: "ANALYTICAL RIGOR",
+          items: [
+            { id: 'objective', label: 'Objective & Scope', icon: <IconTarget /> },
+            { id: 'quality', label: 'Quality & Relations', icon: <IconShieldCheck /> },
+            { id: 'plan', label: 'Analysis Plan', icon: <IconLayers /> },
+          ]
+        },
+        {
+          title: "EXECUTION & INSIGHTS",
+          items: [
+            { id: 'execution', label: 'Progress & Audit', icon: <IconActivity /> },
+            { id: 'dashboard', label: 'Validated Dashboard', icon: <IconDashboard /> },
+            { id: 'provenance', label: 'Provenance Chain', icon: <IconGitCommit /> },
+          ]
+        },
+        {
+          title: "INTELLIGENCE",
+          items: [
+            { id: 'chat', label: 'Contextual Assistant', icon: <IconMessage /> },
+          ]
+        }
+      ];
+
       return (
-        <div className="flex flex-col min-h-screen">
-          {/* Header */}
-          <header className="bg-slate-900 text-white shadow-md border-b border-slate-800 sticky top-0 z-50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap justify-between items-center gap-3">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded bg-indigo-600 flex items-center justify-center font-bold text-white shadow">
-                  A
+        <div className="flex h-screen w-screen overflow-hidden bg-[#0A0A0B]">
+          {/* macOS Glass Sidebar */}
+          <aside className="w-64 flex-shrink-0 glass-surface border-r border-[rgba(255,255,255,0.08)] flex flex-col justify-between select-none z-30">
+            <div>
+              {/* App Title / macOS Traffic Lights Header */}
+              <div className="px-5 py-4 border-b border-[rgba(255,255,255,0.06)] flex items-center space-x-3">
+                <div className="flex space-x-1.5">
+                  <span className="w-3 h-3 rounded-full bg-[#FF5F56]/80 border border-[#E0443E]/50 inline-block"></span>
+                  <span className="w-3 h-3 rounded-full bg-[#FFBD2E]/80 border border-[#DEA123]/50 inline-block"></span>
+                  <span className="w-3 h-3 rounded-full bg-[#27C93F]/80 border border-[#1AAB29]/50 inline-block"></span>
                 </div>
-                <div>
-                  <h1 className="text-base font-semibold tracking-tight">Adaptive Multi-Agent Analytics</h1>
-                  <p className="text-xs text-slate-400">Reproducible analytics with quality control and full provenance</p>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-4">
-                {/* Mode Status Pill */}
-                <div className={`flex items-center px-3 py-1 rounded-full text-xs font-semibold shadow-sm border ${
-                  health.operating_mode === 'LLM_ENABLED'
-                    ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/50'
-                    : 'bg-blue-950/80 text-blue-300 border-blue-500/50'
-                }`}>
-                  <span className={`w-2 h-2 rounded-full mr-2 ${
-                    health.operating_mode === 'LLM_ENABLED'
-                      ? 'bg-emerald-400 animate-pulse'
-                      : 'bg-blue-400'
-                  }`}></span>
-                  {health.operating_mode === 'LLM_ENABLED'
-                    ? `[Active: Gemini ${health.gemini_model || 'gemini-3.5-flash'}]`
-                    : '[Demo: Deterministic Engine]'}
-                </div>
-
-                {/* Project Selector */}
-                <div className="flex items-center space-x-2">
-                  <select
-                    className="bg-slate-800 border border-slate-700 text-xs rounded px-2.5 py-1.5 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                    value={selectedProject?.project_id || ''}
-                    onChange={e => selectProject(e.target.value)}
-                  >
-                    {projects.map(p => (
-                      <option key={p.project_id} value={p.project_id}>{p.name}</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={handleCreateProject}
-                    className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-2.5 py-1.5 rounded transition shadow"
-                  >
-                    + New
-                  </button>
+                <div className="ml-1 font-semibold text-xs tracking-tight text-[#F5F5F7] truncate">
+                  Adaptive Analytics
                 </div>
               </div>
-            </div>
 
-            {/* Navigation Tabs */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 bg-slate-950/60 border-t border-slate-800">
-              <nav className="flex space-x-1 overflow-x-auto text-xs py-2">
-                {[
-                  { id: 'projects', label: '1. Projects' },
-                  { id: 'catalog', label: '2. Tables & Catalog' },
-                  { id: 'objective', label: '3. Objective & Question' },
-                  { id: 'quality', label: '4. Quality & Relations' },
-                  { id: 'plan', label: '5. Analysis Plan' },
-                  { id: 'execution', label: '6. Progress & Audit' },
-                  { id: 'dashboard', label: '7. Validated Dashboard' },
-                  { id: 'chat', label: '8. Contextual Assistant' },
-                  { id: 'provenance', label: '9. Provenance & Audit Trail' }
-                ].map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`px-3 py-1.5 font-medium rounded-md whitespace-nowrap transition ${
-                      activeTab === tab.id
-                        ? 'bg-indigo-600 text-white shadow'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
+              {/* Navigation Items */}
+              <div className="px-3 py-4 space-y-6 overflow-y-auto max-h-[calc(100vh-140px)]">
+                {navigationSections.map((section, sIdx) => (
+                  <div key={sIdx} className="space-y-1">
+                    <div className="px-3 text-[10px] font-semibold text-[#6E6E73] tracking-wider uppercase mb-1.5">
+                      {section.title}
+                    </div>
+                    {section.items.map(item => {
+                      const isActive = activeTab === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => setActiveTab(item.id)}
+                          className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                            isActive
+                              ? 'bg-[rgba(255,255,255,0.09)] text-[#FFFFFF] shadow-sm border border-[rgba(255,255,255,0.12)]'
+                              : 'text-[#8E8E93] hover:text-[#F5F5F7] hover:bg-[rgba(255,255,255,0.04)]'
+                          }`}
+                        >
+                          <span className={isActive ? 'text-[#2997FF]' : 'text-[#6E6E73]'}>
+                            {item.icon}
+                          </span>
+                          <span>{item.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 ))}
-              </nav>
+              </div>
             </div>
-          </header>
 
-          {/* Main Content Area */}
-          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            {/* TAB 1: PROJECTS */}
-            {activeTab === 'projects' && (
-              <div className="space-y-6">
-                <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 flex justify-between items-center">
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-900">Analytics Projects</h2>
-                    <p className="text-sm text-slate-500">Manage workspaces, data tables, and reproducible runs.</p>
-                  </div>
-                  <div className="space-x-3">
-                    <button
-                      onClick={handleLoadDemo}
-                      disabled={loading || !selectedProject}
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded shadow transition disabled:opacity-50"
-                    >
-                      {loading ? 'Loading...' : '[Load Demo Tables]'}
-                    </button>
-                    <button
-                      onClick={() => handleStartRun(false)}
-                      disabled={loading || !selectedProject || !selectedProject.files?.length}
-                      className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded shadow transition disabled:opacity-50"
-                    >
-                      [Run Complete Analytical Workflow]
-                    </button>
-                  </div>
+            {/* Sidebar Bottom: Engine State */}
+            <div className="p-4 border-t border-[rgba(255,255,255,0.06)] bg-[rgba(0,0,0,0.2)]">
+              <div className="flex items-center justify-between text-[11px] text-[#8E8E93]">
+                <span>Engine</span>
+                <span className="font-mono text-[#F5F5F7]">DuckDB 1.1</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-[#8E8E93] mt-1">
+                <span>Rigor Gate</span>
+                <span className="text-[#32D74B] font-medium">Deterministic</span>
+              </div>
+            </div>
+          </aside>
+
+          {/* Main View Area */}
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            {/* Top Glass Header */}
+            <header className="h-14 flex-shrink-0 glass-surface border-b border-[rgba(255,255,255,0.08)] px-6 flex items-center justify-between z-20">
+              <div className="flex items-center space-x-4">
+                <span className="text-xs text-[#6E6E73] font-medium">Workspace:</span>
+                <select
+                  value={selectedProject?.project_id || ''}
+                  onChange={e => selectProject(e.target.value)}
+                  className="bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-xs text-[#F5F5F7] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#2997FF]"
+                >
+                  {projects.map(p => (
+                    <option key={p.project_id} value={p.project_id} className="bg-[#18181B] text-[#F5F5F7]">
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={handleCreateProject}
+                  className="btn-apple-secondary px-2.5 py-1 text-xs flex items-center space-x-1"
+                >
+                  <IconPlus />
+                  <span>New</span>
+                </button>
+              </div>
+
+              {/* Mode Status Pill & Top Actions */}
+              <div className="flex items-center space-x-3">
+                <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-2 ${
+                  health.operating_mode === 'LLM_ENABLED' ? 'pill-success' : 'pill-neutral'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${
+                    health.operating_mode === 'LLM_ENABLED' ? 'bg-[#32D74B] animate-pulse' : 'bg-[#8E8E93]'
+                  }`}></span>
+                  <span>
+                    {health.operating_mode === 'LLM_ENABLED'
+                      ? `[Active: Gemini ${health.gemini_model || 'gemini-3.5-flash'}]`
+                      : '[Demo: Deterministic Engine]'}
+                  </span>
                 </div>
 
-                {selectedProject && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
-                      <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Active Project</h3>
-                      <p className="text-base font-bold text-slate-900">{selectedProject.name}</p>
-                      <p className="text-xs text-slate-500 mt-1">{selectedProject.description || 'No description provided'}</p>
-                      <div className="mt-4 pt-4 border-t border-slate-100 text-xs text-slate-400">
-                        ID: <code className="text-slate-600">{selectedProject.project_id}</code>
+                <button
+                  onClick={handleLoadDemo}
+                  disabled={loading || !selectedProject}
+                  className="btn-apple-secondary px-3 py-1.5 text-xs flex items-center space-x-1.5"
+                >
+                  <IconDownload />
+                  <span>{loading ? 'Loading...' : 'Load Demo'}</span>
+                </button>
+
+                <button
+                  onClick={() => handleStartRun(false)}
+                  disabled={loading || !selectedProject || !selectedProject.files?.length}
+                  className="btn-apple-primary px-3.5 py-1.5 text-xs flex items-center space-x-1.5"
+                >
+                  <IconPlay />
+                  <span>Run Workflow</span>
+                </button>
+              </div>
+            </header>
+
+            {/* Scrollable Editorial Workspace */}
+            <main className="flex-1 overflow-y-auto px-8 py-8 space-y-8 max-w-7xl mx-auto w-full">
+              {/* TAB 1: PROJECTS & SETUP */}
+              {activeTab === 'projects' && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-semibold tracking-tight text-[#F5F5F7]">Projects & Data Tables</h2>
+                    <p className="text-sm text-[#8E8E93] mt-1">
+                      Manage analytical workspaces, inspect raw input schemas, and initiate verified pipeline workflows.
+                    </p>
+                  </div>
+
+                  {selectedProject && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="glass-card p-6 flex flex-col justify-between">
+                        <div>
+                          <span className="text-[10px] font-semibold text-[#6E6E73] uppercase tracking-wider">
+                            Active Workspace
+                          </span>
+                          <h3 className="text-lg font-semibold text-[#F5F5F7] mt-1">{selectedProject.name}</h3>
+                          <p className="text-xs text-[#8E8E93] mt-1.5 leading-relaxed">
+                            {selectedProject.description || 'No description provided'}
+                          </p>
+                        </div>
+                        <div className="pt-4 mt-6 border-t border-[rgba(255,255,255,0.06)] text-[11px] text-[#6E6E73]">
+                          ID: <code className="font-mono text-[#A1A1A6]">{selectedProject.project_id}</code>
+                        </div>
+                      </div>
+
+                      <div className="glass-card p-6 md:col-span-2">
+                        <div className="flex justify-between items-center mb-4">
+                          <div>
+                            <span className="text-[10px] font-semibold text-[#6E6E73] uppercase tracking-wider">
+                              Registered Tables
+                            </span>
+                            <h3 className="text-sm font-semibold text-[#F5F5F7]">
+                              {selectedProject.files?.length || 0} Tables In Memory
+                            </h3>
+                          </div>
+                          <span className="pill-neutral text-[10px] px-2.5 py-1 rounded-full">
+                            CSV & Excel Importer
+                          </span>
+                        </div>
+
+                        {!selectedProject.files?.length ? (
+                          <div className="text-center py-10 text-xs text-[#6E6E73]">
+                            No tables registered in this workspace yet. Click "Load Demo" above to populate synthetic data.
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-xs text-left">
+                              <thead>
+                                <tr className="text-[#6E6E73] uppercase tracking-wider text-[10px] border-b border-[rgba(255,255,255,0.06)]">
+                                  <th className="py-2.5 px-3">Table</th>
+                                  <th className="py-2.5 px-3">Source File</th>
+                                  <th className="py-2.5 px-3">Sheet</th>
+                                  <th className="py-2.5 px-3">Rows</th>
+                                  <th className="py-2.5 px-3">Columns</th>
+                                  <th className="py-2.5 px-3">SHA-256</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-[rgba(255,255,255,0.04)] text-[#A1A1A6]">
+                                {selectedProject.files.map(f => (
+                                  <tr key={f.file_id} className="hover:bg-[rgba(255,255,255,0.025)] transition">
+                                    <td className="py-2.5 px-3 font-semibold text-[#2997FF]">{f.table_name}</td>
+                                    <td className="py-2.5 px-3 text-[#F5F5F7]">{f.filename}</td>
+                                    <td className="py-2.5 px-3 text-[#8E8E93]">{f.sheet_name || '-'}</td>
+                                    <td className="py-2.5 px-3 font-mono text-[#F5F5F7]">{f.row_count.toLocaleString()}</td>
+                                    <td className="py-2.5 px-3 font-mono text-[#F5F5F7]">{f.column_count}</td>
+                                    <td className="py-2.5 px-3 font-mono text-[10px] text-[#6E6E73]">{f.file_hash.slice(0, 12)}...</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
                       </div>
                     </div>
+                  )}
+                </div>
+              )}
 
-                    <div className="bg-white p-5 rounded-lg shadow-sm border border-slate-200 md:col-span-2">
-                      <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
-                        Registered Tables ({selectedProject.files?.length || 0})
-                      </h3>
-                      {!selectedProject.files?.length ? (
-                        <div className="text-center py-6 text-sm text-slate-400">
-                          No tables loaded in this project yet. Click "[Load Demo Tables]" to begin.
+              {/* TAB 2: DATA CATALOG & COLUMN PROFILING */}
+              {activeTab === 'catalog' && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-semibold tracking-tight text-[#F5F5F7]">Data Catalog & Column Profiling</h2>
+                    <p className="text-sm text-[#8E8E93] mt-1">
+                      Deterministic type inference, null-rate audits, and leading zero preservation guarantees.
+                    </p>
+                  </div>
+
+                  {artifacts.DataCatalog?.tables ? (
+                    Object.entries(artifacts.DataCatalog.tables).map(([tblId, tbl]) => (
+                      <div key={tblId} className="glass-card overflow-hidden">
+                        <div className="px-6 py-4 border-b border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.015)] flex justify-between items-center">
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <span className="pill-accent text-xs font-semibold px-2.5 py-0.5 rounded-md">
+                                {tblId}
+                              </span>
+                              <span className="text-xs text-[#8E8E93]">
+                                {tbl.source_filename} {tbl.sheet_name ? `> Sheet: ${tbl.sheet_name}` : ''}
+                              </span>
+                            </div>
+                            <p className="text-xs text-[#A1A1A6] mt-1">{tbl.row_semantic_meaning}</p>
+                          </div>
+                          <div className="text-right text-xs text-[#8E8E93]">
+                            <div><strong>{tbl.row_count.toLocaleString()}</strong> rows | <strong>{tbl.column_count}</strong> columns</div>
+                            <div className="font-mono text-[10px] text-[#6E6E73] mt-0.5">SHA: {tbl.file_hash_sha256.slice(0, 12)}...</div>
+                          </div>
                         </div>
-                      ) : (
-                        <div className="overflow-x-auto">
+
+                        <div className="p-4 overflow-x-auto">
                           <table className="w-full text-xs text-left">
-                            <thead className="bg-slate-50 text-slate-600 uppercase border-b border-slate-200">
-                              <tr>
-                                <th className="py-2 px-3">Table</th>
-                                <th className="py-2 px-3">Source File</th>
-                                <th className="py-2 px-3">Sheet</th>
-                                <th className="py-2 px-3">Rows</th>
-                                <th className="py-2 px-3">Columns</th>
-                                <th className="py-2 px-3">SHA-256 Hash</th>
+                            <thead>
+                              <tr className="text-[#6E6E73] uppercase tracking-wider text-[10px] border-b border-[rgba(255,255,255,0.06)]">
+                                <th className="py-2.5 px-3">Column</th>
+                                <th className="py-2.5 px-3">Inferred Type</th>
+                                <th className="py-2.5 px-3">Nulls (%)</th>
+                                <th className="py-2.5 px-3">Unique</th>
+                                <th className="py-2.5 px-3">Leading Zeros</th>
+                                <th className="py-2.5 px-3">Sample Values</th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100">
-                              {selectedProject.files.map(f => (
-                                <tr key={f.file_id} className="hover:bg-slate-50/50">
-                                  <td className="py-2 px-3 font-semibold text-indigo-700">{f.table_name}</td>
-                                  <td className="py-2 px-3 text-slate-600">{f.filename}</td>
-                                  <td className="py-2 px-3 text-slate-500">{f.sheet_name || '-'}</td>
-                                  <td className="py-2 px-3 text-slate-700">{f.row_count.toLocaleString()}</td>
-                                  <td className="py-2 px-3 text-slate-700">{f.column_count}</td>
-                                  <td className="py-2 px-3 font-mono text-[10px] text-slate-400">{f.file_hash.slice(0, 10)}...</td>
+                            <tbody className="divide-y divide-[rgba(255,255,255,0.04)] text-[#A1A1A6]">
+                              {Object.entries(tbl.columns).map(([colName, c]) => (
+                                <tr key={colName} className="hover:bg-[rgba(255,255,255,0.02)] transition">
+                                  <td className="py-2 px-3 font-medium text-[#F5F5F7]">{colName}</td>
+                                  <td className="py-2 px-3">
+                                    <span className="pill-neutral px-2 py-0.5 rounded text-[10px] font-mono">
+                                      {c.inferred_type}
+                                    </span>
+                                  </td>
+                                  <td className="py-2 px-3">
+                                    <span className={c.null_percentage > 0 ? 'text-[#FF9F0A] font-semibold' : 'text-[#6E6E73]'}>
+                                      {c.null_percentage}% ({c.null_count})
+                                    </span>
+                                  </td>
+                                  <td className="py-2 px-3 text-[#A1A1A6] font-mono">{c.unique_count}</td>
+                                  <td className="py-2 px-3">
+                                    {c.has_leading_zeros ? (
+                                      <span className="pill-accent px-2 py-0.5 rounded text-[10px] font-semibold">Preserved (Text)</span>
+                                    ) : (
+                                      <span className="text-[#6E6E73]">-</span>
+                                    )}
+                                  </td>
+                                  <td className="py-2 px-3 text-[#8E8E93] font-mono text-[11px]">
+                                    {c.sample_values?.slice(0, 3).join(', ') || '-'}
+                                  </td>
                                 </tr>
                               ))}
                             </tbody>
                           </table>
                         </div>
-                      )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="glass-card p-12 text-center text-xs text-[#8E8E93]">
+                      Execute the workflow to generate the deterministic Auditor catalog and profiling report.
                     </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* TAB 2: CATALOG & PROFILING */}
-            {activeTab === 'catalog' && (
-              <div className="space-y-6">
-                <div className="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
-                  <h2 className="text-base font-bold text-slate-900 mb-1">Data Catalog & Column Profiling</h2>
-                  <p className="text-xs text-slate-500">
-                    Deterministic inspection of data types, null percentages, and leading zero preservation.
-                  </p>
+                  )}
                 </div>
+              )}
 
-                {artifacts.DataCatalog?.tables ? (
-                  Object.entries(artifacts.DataCatalog.tables).map(([tblId, tbl]) => (
-                    <div key={tblId} className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-                      <div className="bg-slate-50 px-5 py-3 border-b border-slate-200 flex justify-between items-center">
-                        <div>
-                          <span className="text-xs font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded mr-2">
-                            {tblId}
+              {/* TAB 3: OBJECTIVE & SCOPE */}
+              {activeTab === 'objective' && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-semibold tracking-tight text-[#F5F5F7]">Objective & Formal Scope</h2>
+                    <p className="text-sm text-[#8E8E93] mt-1">
+                      Formal contract structured by Organizer Agent with explicit boundaries and ambiguity resolutions.
+                    </p>
+                  </div>
+
+                  <div className="glass-card p-6 space-y-6">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="flex items-center space-x-2 mb-2">
+                          <span className="pill-accent text-xs font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                            ObjectiveSpec Contract
                           </span>
-                          <span className="text-xs text-slate-500">({tbl.source_filename} {tbl.sheet_name ? `> Sheet: ${tbl.sheet_name}` : ''})</span>
-                          <p className="text-xs text-slate-600 mt-1 italic">{tbl.row_semantic_meaning}</p>
+                          <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full ${
+                            health.operating_mode === 'LLM_ENABLED' ? 'pill-success' : 'pill-neutral'
+                          }`}>
+                            {health.operating_mode === 'LLM_ENABLED' ? '[Proposed with Gemini Assistance]' : '[Deterministic Rules Engine]'}
+                          </span>
                         </div>
-                        <div className="text-right text-xs text-slate-500">
-                          <div><strong>{tbl.row_count.toLocaleString()}</strong> rows | <strong>{tbl.column_count}</strong> columns</div>
-                          <div className="font-mono text-[10px] text-slate-400 mt-0.5">SHA: {tbl.file_hash_sha256.slice(0, 12)}...</div>
+                        <h3 className="text-lg font-semibold text-[#F5F5F7]">
+                          {artifacts.ObjectiveSpec?.original_question || 'Sales declined over recent months...'}
+                        </h3>
+                      </div>
+                      <span className="pill-success px-3 py-1 rounded-full text-xs font-semibold">
+                        Status: {artifacts.ObjectiveSpec?.status || 'Draft'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-[rgba(255,255,255,0.06)]">
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="text-[10px] font-semibold text-[#6E6E73] uppercase tracking-wider">Operational Objective</h4>
+                          <p className="text-sm text-[#F5F5F7] mt-1 font-medium leading-relaxed">{artifacts.ObjectiveSpec?.operational_objective}</p>
+                        </div>
+                        <div>
+                          <h4 className="text-[10px] font-semibold text-[#6E6E73] uppercase tracking-wider">Decision to Inform</h4>
+                          <p className="text-sm text-[#A1A1A6] mt-1 leading-relaxed">{artifacts.ObjectiveSpec?.decision_to_inform}</p>
+                        </div>
+                        <div>
+                          <h4 className="text-[10px] font-semibold text-[#6E6E73] uppercase tracking-wider">Primary Metric</h4>
+                          <span className="inline-block mt-1 pill-accent font-mono text-xs font-semibold px-2.5 py-1 rounded-lg">
+                            {artifacts.ObjectiveSpec?.primary_metric}
+                          </span>
                         </div>
                       </div>
 
-                      <div className="p-4 overflow-x-auto">
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="text-[10px] font-semibold text-[#6E6E73] uppercase tracking-wider">Comparison Period</h4>
+                          <p className="text-sm text-[#F5F5F7] mt-1 font-medium">{artifacts.ObjectiveSpec?.comparison_period}</p>
+                        </div>
+                        <div>
+                          <h4 className="text-[10px] font-semibold text-[#6E6E73] uppercase tracking-wider">Acceptance Criteria</h4>
+                          <ul className="text-xs text-[#A1A1A6] mt-1 list-disc list-inside space-y-1">
+                            {artifacts.ObjectiveSpec?.acceptance_criteria?.map((c, idx) => (
+                              <li key={idx}>{c}</li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div>
+                          <h4 className="text-[10px] font-semibold text-[#6E6E73] uppercase tracking-wider">Excluded Scope</h4>
+                          <ul className="text-xs text-[#8E8E93] mt-1 list-disc list-inside space-y-1">
+                            {artifacts.ObjectiveSpec?.excluded_scope?.map((s, idx) => (
+                              <li key={idx}>{s}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Ambiguities */}
+                    {artifacts.ObjectiveSpec?.pending_ambiguities?.length > 0 && (
+                      <div className="pt-6 border-t border-[rgba(255,255,255,0.06)]">
+                        <h4 className="text-[10px] font-semibold text-[#6E6E73] uppercase tracking-wider mb-3">
+                          Semantic Ambiguity Resolutions
+                        </h4>
+                        <div className="space-y-3">
+                          {artifacts.ObjectiveSpec.pending_ambiguities.map(amb => (
+                            <div key={amb.id} className="p-3.5 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] flex justify-between items-center">
+                              <div>
+                                <p className="text-xs font-semibold text-[#F5F5F7]">{amb.question}</p>
+                                <p className="text-xs text-[#8E8E93] mt-0.5">{amb.context}</p>
+                              </div>
+                              <div className="text-right">
+                                <span className="pill-accent text-[11px] font-semibold px-2.5 py-1 rounded-lg">
+                                  Resolution: {amb.user_decision || amb.proposed_default}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: QUALITY & RELATIONSHIPS */}
+              {activeTab === 'quality' && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-semibold tracking-tight text-[#F5F5F7]">Data Quality & Relationships</h2>
+                    <p className="text-sm text-[#8E8E93] mt-1">
+                      Independent quality audit identifying data risks, orphan records, and cardinality controls.
+                    </p>
+                  </div>
+
+                  {artifacts.DataQualityReport?.issues?.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {artifacts.DataQualityReport.issues.map(iss => (
+                        <div key={iss.id} className="glass-card p-5 flex flex-col justify-between">
+                          <div>
+                            <div className="flex justify-between items-center mb-3">
+                              <span className={`text-[10px] font-semibold uppercase px-2.5 py-0.5 rounded-full ${
+                                iss.severity === 'blocking' ? 'pill-danger' :
+                                iss.severity === 'warning' ? 'pill-warning' : 'pill-accent'
+                              }`}>
+                                {iss.severity} • {iss.issue_type}
+                              </span>
+                              <span className="text-xs text-[#8E8E93]">
+                                Affects: <strong className="text-[#F5F5F7]">{iss.affected_rows}</strong> rows ({iss.affected_percentage}%)
+                              </span>
+                            </div>
+                            <p className="text-xs font-semibold text-[#F5F5F7] leading-relaxed">{iss.description}</p>
+                            {iss.evidence_samples?.length > 0 && (
+                              <div className="mt-3 text-[11px] bg-[rgba(0,0,0,0.3)] p-2.5 rounded-lg border border-[rgba(255,255,255,0.06)] font-mono text-[#A1A1A6]">
+                                Evidence: {Array.isArray(iss.evidence_samples) ? iss.evidence_samples.slice(0, 3).join(', ') : JSON.stringify(iss.evidence_samples)}
+                              </div>
+                            )}
+                          </div>
+                          <div className="mt-4 pt-3 border-t border-[rgba(255,255,255,0.06)] text-xs text-[#8E8E93]">
+                            <strong className="text-[#A1A1A6]">Recommended Action:</strong> {iss.recommended_action}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="glass-card p-12 text-center text-xs text-[#8E8E93]">
+                      No data quality issues recorded yet.
+                    </div>
+                  )}
+
+                  {/* Relationships Table */}
+                  <div className="glass-card p-6">
+                    <h3 className="text-sm font-semibold text-[#F5F5F7] mb-4">Table Relationships & Join Cardinality</h3>
+                    {artifacts.Relationships?.length > 0 ? (
+                      <div className="overflow-x-auto">
                         <table className="w-full text-xs text-left">
-                          <thead className="bg-slate-100 text-slate-600 uppercase border-b border-slate-200">
-                            <tr>
-                              <th className="py-2 px-3">Column</th>
-                              <th className="py-2 px-3">Inferred Type</th>
-                              <th className="py-2 px-3">Nulls (%)</th>
-                              <th className="py-2 px-3">Unique</th>
-                              <th className="py-2 px-3">Leading Zeros</th>
-                              <th className="py-2 px-3">Sample Values</th>
+                          <thead>
+                            <tr className="text-[#6E6E73] uppercase tracking-wider text-[10px] border-b border-[rgba(255,255,255,0.06)]">
+                              <th className="py-2.5 px-3">Join (Left to Right)</th>
+                              <th className="py-2.5 px-3">Keys</th>
+                              <th className="py-2.5 px-3">Cardinality</th>
+                              <th className="py-2.5 px-3">Left Match Rate</th>
+                              <th className="py-2.5 px-3">Left Orphans</th>
+                              <th className="py-2.5 px-3">Risk Level</th>
+                              <th className="py-2.5 px-3">Status</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-100">
-                            {Object.entries(tbl.columns).map(([colName, c]) => (
-                              <tr key={colName} className="hover:bg-slate-50/50">
-                                <td className="py-2 px-3 font-medium text-slate-800">{colName}</td>
+                          <tbody className="divide-y divide-[rgba(255,255,255,0.04)] text-[#A1A1A6]">
+                            {artifacts.Relationships.map(r => (
+                              <tr key={r.id} className="hover:bg-[rgba(255,255,255,0.02)] transition">
+                                <td className="py-2 px-3 font-semibold text-[#F5F5F7]">{r.left_table} -&gt; {r.right_table}</td>
+                                <td className="py-2 px-3 font-mono text-[#2997FF]">{r.left_key} = {r.right_key}</td>
+                                <td className="py-2 px-3 font-mono">{r.cardinality}</td>
+                                <td className="py-2 px-3 font-mono">{r.match_rate_left}%</td>
+                                <td className="py-2 px-3 text-[#FF9F0A] font-semibold">{r.orphan_count_left}</td>
                                 <td className="py-2 px-3">
-                                  <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 text-slate-700 border border-slate-200">
-                                    {c.inferred_type}
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                                    r.risk_level === 'high' ? 'pill-danger' :
+                                    r.risk_level === 'medium' ? 'pill-warning' : 'pill-success'
+                                  }`}>
+                                    {r.risk_level.toUpperCase()}
                                   </span>
                                 </td>
                                 <td className="py-2 px-3">
-                                  <span className={c.null_percentage > 0 ? 'text-amber-600 font-semibold' : 'text-slate-400'}>
-                                    {c.null_percentage}% ({c.null_count})
-                                  </span>
-                                </td>
-                                <td className="py-2 px-3 text-slate-600">{c.unique_count}</td>
-                                <td className="py-2 px-3">
-                                  {c.has_leading_zeros ? (
-                                    <span className="badge-info px-2 py-0.5 rounded text-[10px] font-bold">Preserved (Text)</span>
-                                  ) : (
-                                    <span className="text-slate-300">-</span>
-                                  )}
-                                </td>
-                                <td className="py-2 px-3 text-slate-500 font-mono text-[11px]">
-                                  {c.sample_values?.slice(0, 3).join(', ') || '-'}
+                                  <span className="text-[#32D74B] font-medium">[Confirmed with Deduplication]</span>
                                 </td>
                               </tr>
                             ))}
                           </tbody>
                         </table>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="bg-white p-8 text-center rounded-lg border border-slate-200 text-sm text-slate-500">
-                    Run the pipeline for the Auditor Agent to generate the catalog and profiling report.
+                    ) : (
+                      <p className="text-xs text-[#8E8E93]">No relationships analyzed yet.</p>
+                    )}
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
 
-            {/* TAB 3: OBJECTIVE */}
-            {activeTab === 'objective' && (
-              <div className="space-y-6">
-                <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
-                          Organizer Agent • ObjectiveSpec
-                        </span>
-                        <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full border ${
-                          health.operating_mode === 'LLM_ENABLED'
-                            ? 'bg-purple-50 text-purple-700 border-purple-200'
-                            : 'bg-blue-50 text-blue-700 border-blue-200'
-                        }`}>
-                          {health.operating_mode === 'LLM_ENABLED' ? '[Proposed with Gemini Assistance]' : '[Deterministic Rules Engine]'}
-                        </span>
-                      </div>
-                      <h2 className="text-lg font-bold text-slate-900 mt-2">
-                        {artifacts.ObjectiveSpec?.original_question || 'Sales declined over recent months...'}
-                      </h2>
-                    </div>
-                    <span className="badge-success px-3 py-1 rounded-full text-xs font-semibold">
-                      Status: {artifacts.ObjectiveSpec?.status || 'Draft'}
-                    </span>
+              {/* TAB 5: ANALYSIS PLAN */}
+              {activeTab === 'plan' && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-semibold tracking-tight text-[#F5F5F7]">Methodological Analysis Plan</h2>
+                    <p className="text-sm text-[#8E8E93] mt-1">
+                      Validated operations proposed by Methodologist Agent, defensible through scientific citations.
+                    </p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-xs font-semibold text-slate-500 uppercase">Operational Objective</h4>
-                        <p className="text-sm text-slate-800 mt-1 font-medium">{artifacts.ObjectiveSpec?.operational_objective}</p>
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-semibold text-slate-500 uppercase">Decision to Inform</h4>
-                        <p className="text-sm text-slate-800 mt-1">{artifacts.ObjectiveSpec?.decision_to_inform}</p>
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-semibold text-slate-500 uppercase">Primary Metric</h4>
-                        <span className="inline-block mt-1 px-2.5 py-1 rounded bg-indigo-50 text-indigo-700 font-mono text-xs font-bold">
-                          {artifacts.ObjectiveSpec?.primary_metric}
-                        </span>
-                      </div>
+                  <div className="glass-card p-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-base font-semibold text-[#F5F5F7]">
+                        {artifacts.AnalysisPlan?.title || 'Registered Analysis Plan'}
+                      </h3>
+                      <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full ${
+                        health.operating_mode === 'LLM_ENABLED' ? 'pill-success' : 'pill-neutral'
+                      }`}>
+                        {health.operating_mode === 'LLM_ENABLED' ? '[Proposed by Gemini & Validated against Catalog]' : '[Deterministic Methods Catalog]'}
+                      </span>
                     </div>
-
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-xs font-semibold text-slate-500 uppercase">Comparison Period</h4>
-                        <p className="text-sm text-slate-800 mt-1 font-medium">{artifacts.ObjectiveSpec?.comparison_period}</p>
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-semibold text-slate-500 uppercase">Acceptance Criteria</h4>
-                        <ul className="text-xs text-slate-600 mt-1 list-disc list-inside space-y-1">
-                          {artifacts.ObjectiveSpec?.acceptance_criteria?.map((c, idx) => (
-                            <li key={idx}>{c}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-semibold text-slate-500 uppercase">Excluded Scope</h4>
-                        <ul className="text-xs text-slate-500 mt-1 list-disc list-inside space-y-1 italic">
-                          {artifacts.ObjectiveSpec?.excluded_scope?.map((s, idx) => (
-                            <li key={idx}>{s}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
+                    <p className="text-xs text-[#8E8E93] leading-relaxed">{artifacts.AnalysisPlan?.rationale}</p>
                   </div>
 
-                  {/* Ambiguities */}
-                  {artifacts.ObjectiveSpec?.pending_ambiguities?.length > 0 && (
-                    <div className="mt-6 pt-6 border-t border-slate-100">
-                      <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">
-                        Semantic Ambiguity Resolutions
+                  {artifacts.AnalysisPlan?.operations?.map((op, idx) => (
+                    <div key={op.step_id} className="glass-card p-5">
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="flex items-center space-x-3">
+                          <span className="w-6 h-6 rounded-full bg-[rgba(255,255,255,0.08)] text-[#F5F5F7] text-xs flex items-center justify-center font-bold">
+                            {idx + 1}
+                          </span>
+                          <h4 className="text-xs font-semibold text-[#F5F5F7]">{op.operation_name}</h4>
+                        </div>
+                        <span className="pill-neutral text-[10px] font-mono px-2.5 py-0.5 rounded">
+                          {op.category}
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#A1A1A6] ml-9 leading-relaxed">{op.description}</p>
+                      <div className="ml-9 mt-3 flex flex-wrap gap-4 text-[11px] text-[#6E6E73]">
+                        <div><strong className="text-[#8E8E93]">Inputs:</strong> {op.required_inputs.join(', ')}</div>
+                        <div><strong className="text-[#8E8E93]">Assumptions:</strong> {op.assumptions.join(' | ')}</div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {artifacts.AnalysisPlan?.citations?.length > 0 && (
+                    <div className="glass-card p-6 border border-[rgba(41,151,255,0.2)]">
+                      <h4 className="text-xs font-semibold text-[#2997FF] uppercase tracking-wider mb-3">
+                        Methodological Citations & Theoretical Grounding
                       </h4>
-                      <div className="space-y-3">
-                        {artifacts.ObjectiveSpec.pending_ambiguities.map(amb => (
-                          <div key={amb.id} className="p-3 rounded-lg border border-slate-200 bg-slate-50 flex justify-between items-center">
-                            <div>
-                              <p className="text-xs font-bold text-slate-800">{amb.question}</p>
-                              <p className="text-xs text-slate-500 mt-0.5">{amb.context}</p>
-                            </div>
-                            <div className="text-right">
-                              <span className="text-[11px] font-medium text-indigo-700 bg-indigo-100 px-2.5 py-1 rounded">
-                                Resolution: {amb.user_decision || amb.proposed_default}
-                              </span>
-                            </div>
+                      <div className="space-y-2">
+                        {artifacts.AnalysisPlan.citations.map((c, i) => (
+                          <div key={i} className="text-xs text-[#A1A1A6]">
+                            <a href={c.url} target="_blank" className="font-semibold text-[#2997FF] hover:underline">
+                              {c.title}
+                            </a>: "{c.supported_claim}"
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* TAB 4: QUALITY & RELATIONSHIPS */}
-            {activeTab === 'quality' && (
-              <div className="space-y-6">
-                <div className="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
-                  <h2 className="text-base font-bold text-slate-900 mb-1">Data Quality Report (DataQualityReport)</h2>
-                  <p className="text-xs text-slate-500">
-                    Deterministically audited anomalies with empirical evidence and applied mitigations.
-                  </p>
-                </div>
-
-                {artifacts.DataQualityReport?.issues?.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {artifacts.DataQualityReport.issues.map(iss => (
-                      <div key={iss.id} className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex flex-col justify-between">
-                        <div>
-                          <div className="flex justify-between items-center mb-2">
-                            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded badge-${iss.severity}`}>
-                              {iss.severity} • {iss.issue_type}
-                            </span>
-                            <span className="text-xs text-slate-500">
-                              Affects: <strong>{iss.affected_rows}</strong> rows ({iss.affected_percentage}%)
-                            </span>
-                          </div>
-                          <p className="text-xs font-semibold text-slate-800">{iss.description}</p>
-                          {iss.evidence_samples?.length > 0 && (
-                            <div className="mt-2 text-[11px] bg-slate-50 p-2 rounded border border-slate-100 font-mono text-slate-600">
-                              Evidence: {Array.isArray(iss.evidence_samples) ? iss.evidence_samples.slice(0, 3).join(', ') : JSON.stringify(iss.evidence_samples)}
-                            </div>
-                          )}
-                        </div>
-                        <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-500">
-                          <strong>Recommended Action:</strong> {iss.recommended_action}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="bg-white p-8 text-center rounded-lg border border-slate-200 text-sm text-slate-500">
-                    No data quality issues recorded yet.
-                  </div>
-                )}
-
-                {/* Relationships */}
-                <div className="bg-white p-5 rounded-lg shadow-sm border border-slate-200 mt-6">
-                  <h3 className="text-sm font-bold text-slate-900 mb-3">Table Relationships & Cardinality Verification</h3>
-                  {artifacts.Relationships?.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs text-left">
-                        <thead className="bg-slate-50 text-slate-600 uppercase border-b border-slate-200">
-                          <tr>
-                            <th className="py-2 px-3">Join (Left to Right)</th>
-                            <th className="py-2 px-3">Keys</th>
-                            <th className="py-2 px-3">Cardinality</th>
-                            <th className="py-2 px-3">Left Match Rate</th>
-                            <th className="py-2 px-3">Left Orphans</th>
-                            <th className="py-2 px-3">Risk Level</th>
-                            <th className="py-2 px-3">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {artifacts.Relationships.map(r => (
-                            <tr key={r.id}>
-                              <td className="py-2 px-3 font-semibold text-slate-800">{r.left_table} -&gt; {r.right_table}</td>
-                              <td className="py-2 px-3 font-mono text-indigo-600">{r.left_key} = {r.right_key}</td>
-                              <td className="py-2 px-3 font-mono">{r.cardinality}</td>
-                              <td className="py-2 px-3">{r.match_rate_left}%</td>
-                              <td className="py-2 px-3 text-amber-600 font-bold">{r.orphan_count_left}</td>
-                              <td className="py-2 px-3">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                  r.risk_level === 'high' ? 'bg-red-100 text-red-700' :
-                                  r.risk_level === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
-                                }`}>
-                                  {r.risk_level.toUpperCase()}
-                                </span>
-                              </td>
-                              <td className="py-2 px-3">
-                                <span className="text-emerald-700 font-semibold">[Confirmed with Deduplication]</span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+              {/* TAB 6: PROGRESS & AUDIT */}
+              {activeTab === 'execution' && (
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h2 className="text-2xl font-semibold tracking-tight text-[#F5F5F7]">Progress & Audit Trail</h2>
+                      <p className="text-sm text-[#8E8E93] mt-1">
+                        Observable state machine transitions, error detection, and automated repair loop validation.
+                      </p>
                     </div>
-                  ) : (
-                    <p className="text-xs text-slate-400">No relationships analyzed yet.</p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* TAB 5: ANALYSIS PLAN */}
-            {activeTab === 'plan' && (
-              <div className="space-y-6">
-                <div className="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <h2 className="text-base font-bold text-slate-900">
-                      {artifacts.AnalysisPlan?.title || 'Registered Analysis Plan'}
-                    </h2>
-                    <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full border ${
-                      health.operating_mode === 'LLM_ENABLED'
-                        ? 'bg-purple-50 text-purple-700 border-purple-200'
-                        : 'bg-blue-50 text-blue-700 border-blue-200'
-                    }`}>
-                      {health.operating_mode === 'LLM_ENABLED' ? '[Proposed by Gemini & Validated against Catalog]' : '[Deterministic Methods Catalog]'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500">{artifacts.AnalysisPlan?.rationale}</p>
-                </div>
-
-                {artifacts.AnalysisPlan?.operations?.map((op, idx) => (
-                  <div key={op.step_id} className="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="flex items-center space-x-2">
-                        <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-xs flex items-center justify-center font-bold">
-                          {idx + 1}
-                        </span>
-                        <h3 className="text-xs font-bold text-slate-900">{op.operation_name}</h3>
-                      </div>
-                      <span className="text-[11px] font-mono bg-slate-100 px-2 py-0.5 rounded text-slate-600">
-                        {op.category}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 ml-8">{op.description}</p>
-                    <div className="ml-8 mt-2 flex flex-wrap gap-4 text-[11px] text-slate-500">
-                      <div><strong>Inputs:</strong> {op.required_inputs.join(', ')}</div>
-                      <div><strong>Assumptions:</strong> {op.assumptions.join(' | ')}</div>
-                    </div>
-                  </div>
-                ))}
-
-                {artifacts.AnalysisPlan?.citations?.length > 0 && (
-                  <div className="bg-indigo-50/60 p-4 rounded-lg border border-indigo-100">
-                    <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-2">
-                      Methodological Citations & Defense
-                    </h4>
-                    <div className="space-y-2">
-                      {artifacts.AnalysisPlan.citations.map((c, i) => (
-                        <div key={i} className="text-xs text-indigo-800">
-                          <a href={c.url} target="_blank" className="font-semibold underline hover:text-indigo-950">
-                            {c.title}
-                          </a>: "{c.supported_claim}"
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* TAB 6: EXECUTION & AUDIT */}
-            {activeTab === 'execution' && (
-              <div className="space-y-6">
-                <div className="bg-white p-5 rounded-lg shadow-sm border border-slate-200 flex justify-between items-center">
-                  <div>
-                    <h2 className="text-base font-bold text-slate-900 mb-1">Execution Audit Trail & State Machine</h2>
-                    <p className="text-xs text-slate-500">
-                      Real-time observable stage transitions and automated repair tracking.
-                    </p>
-                  </div>
-                  <div className="space-x-2">
                     <button
                       onClick={() => handleStartRun(true)}
-                      className="bg-red-600 hover:bg-red-500 text-white text-xs font-semibold px-3 py-1.5 rounded shadow"
+                      className="btn-apple-secondary px-3.5 py-1.5 text-xs text-[#FF453A] border-[#FF453A]/30 hover:bg-[#FF453A]/10"
                       title="Injects NaN to verify independent validator rejection and automated repair loop"
                     >
                       [Test Repair Cycle: Inject Error]
                     </button>
                   </div>
-                </div>
 
-                <div className="bg-slate-900 p-5 rounded-lg text-slate-200 font-mono text-xs space-y-2 max-h-96 overflow-y-auto shadow-inner">
-                  {events.length > 0 ? (
-                    events.map(ev => (
-                      <div key={ev.event_id} className="flex space-x-3 text-[11px] border-b border-slate-800/60 pb-1.5">
-                        <span className="text-slate-500">{new Date(ev.created_at).toLocaleTimeString()}</span>
-                        <span className="text-indigo-400 font-bold">[{ev.stage}]</span>
-                        <span className={ev.level === 'ERROR' ? 'text-red-400 font-bold' : 'text-slate-300'}>
-                          {ev.message}
-                        </span>
+                  {/* Terminal Log Stream */}
+                  <div className="glass-card p-5 bg-[#050506]/90 border border-[rgba(255,255,255,0.08)] font-mono text-xs space-y-2 max-h-96 overflow-y-auto">
+                    {events.length > 0 ? (
+                      events.map(ev => (
+                        <div key={ev.event_id} className="flex space-x-3 text-[11px] border-b border-[rgba(255,255,255,0.03)] pb-1.5">
+                          <span className="text-[#6E6E73]">{new Date(ev.created_at).toLocaleTimeString()}</span>
+                          <span className="text-[#2997FF] font-bold">[{ev.stage}]</span>
+                          <span className={ev.level === 'ERROR' ? 'text-[#FF453A] font-bold' : 'text-[#A1A1A6]'}>
+                            {ev.message}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-[#6E6E73] italic">Awaiting pipeline start...</div>
+                    )}
+                  </div>
+
+                  {/* Transformation Records */}
+                  {artifacts.TransformationRecords?.length > 0 && (
+                    <div className="glass-card p-6">
+                      <h3 className="text-sm font-semibold text-[#F5F5F7] mb-4">Auditable Transformation Log</h3>
+                      <div className="space-y-3">
+                        {artifacts.TransformationRecords.map(t => (
+                          <div key={t.transformation_id} className="p-3.5 rounded-xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)] text-xs">
+                            <div className="flex justify-between font-semibold text-[#F5F5F7]">
+                              <span>{t.step_index}. {t.operation} (ID: {t.transformation_id})</span>
+                              <span className="text-[#8E8E93] font-mono">Rows: {t.rows_before} -&gt; {t.rows_after} (Excluded: {t.rows_excluded})</span>
+                            </div>
+                            <p className="text-[#8E8E93] mt-1.5">{t.rationale}</p>
+                            {t.join_check && (
+                              <div className="mt-2.5 p-2 bg-[rgba(0,0,0,0.3)] rounded-lg border border-[rgba(255,255,255,0.06)] text-[11px] text-[#A1A1A6] flex justify-between">
+                                <span>Join with <strong>{t.join_check.right_table}</strong>: factor {t.join_check.multiplication_factor}x</span>
+                                <span className="text-[#32D74B] font-semibold">[Metric Reconciled: {t.join_check.metric_reconciled ? 'YES' : 'NO'}]</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-slate-500 italic">Awaiting pipeline start...</div>
+                    </div>
                   )}
                 </div>
+              )}
 
-                {/* Transformations applied */}
-                {artifacts.TransformationRecords?.length > 0 && (
-                  <div className="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
-                    <h3 className="text-sm font-bold text-slate-900 mb-3">Auditable Transformation Log (TransformationRecords)</h3>
-                    <div className="space-y-3">
-                      {artifacts.TransformationRecords.map(t => (
-                        <div key={t.transformation_id} className="p-3 bg-slate-50 rounded border border-slate-200 text-xs">
-                          <div className="flex justify-between font-semibold text-slate-800">
-                            <span>{t.step_index}. {t.operation} (ID: {t.transformation_id})</span>
-                            <span className="text-slate-500">Rows: {t.rows_before} -&gt; {t.rows_after} (Excluded: {t.rows_excluded})</span>
-                          </div>
-                          <p className="text-slate-600 mt-1">{t.rationale}</p>
-                          {t.join_check && (
-                            <div className="mt-2 p-2 bg-white rounded border border-slate-200 text-[11px] text-slate-500 flex justify-between">
-                              <span>Join with <strong>{t.join_check.right_table}</strong>: factor {t.join_check.multiplication_factor}x</span>
-                              <span className="text-emerald-700 font-bold">[Metric Reconciled: {t.join_check.metric_reconciled ? 'YES' : 'NO'}]</span>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* TAB 7: DASHBOARD */}
-            {activeTab === 'dashboard' && (
-              <div className="space-y-6">
-                {artifacts.DashboardSpec ? (
-                  <>
-                    {/* Dashboard Header */}
-                    <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+              {/* TAB 7: VALIDATED DASHBOARD */}
+              {activeTab === 'dashboard' && (
+                <div className="space-y-8">
+                  {artifacts.DashboardSpec ? (
+                    <>
+                      {/* Dashboard Header Bar */}
                       <div className="flex justify-between items-start">
                         <div>
                           <div className="flex flex-wrap items-center gap-2 mb-2">
-                            <span className="badge-success text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
+                            <span className="pill-success text-xs font-semibold px-3 py-0.5 rounded-full uppercase tracking-wider">
                               [Validated Dashboard - 100% Reconciled]
                             </span>
-                            <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300">
+                            <span className="pill-neutral text-[11px] px-2.5 py-0.5 rounded-full">
                               [Calculated by Engine: DuckDB / Pandas]
                             </span>
-                            <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-300">
+                            <span className="pill-accent text-[11px] px-2.5 py-0.5 rounded-full">
                               [Deterministically Validated]
                             </span>
                           </div>
-                          <h2 className="text-xl font-bold text-slate-900">{artifacts.DashboardSpec.title}</h2>
-                          <p className="text-xs text-slate-500 mt-1">{artifacts.DashboardSpec.subtitle}</p>
+                          <h2 className="text-3xl font-semibold tracking-tight text-[#F5F5F7] mt-1">
+                            {artifacts.DashboardSpec.title}
+                          </h2>
+                          <p className="text-xs text-[#8E8E93] mt-1">{artifacts.DashboardSpec.subtitle}</p>
                         </div>
-                        <div className="text-right">
-                          <button
-                            onClick={() => window.print()}
-                            className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded transition"
-                          >
-                            [Export / Print]
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => window.print()}
+                          className="btn-apple-secondary px-3 py-1.5 text-xs"
+                        >
+                          Print / Export
+                        </button>
                       </div>
 
-                      {/* Metric Cards */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+                      {/* Metric Cards Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {artifacts.DashboardSpec.metric_cards.map(card => (
-                          <div key={card.id} className="bg-slate-50 p-4 rounded-lg border border-slate-200 shadow-sm">
-                            <span className="text-xs font-medium text-slate-500">{card.title}</span>
-                            <div className="text-2xl font-bold text-slate-900 mt-1">{card.value}</div>
+                          <div key={card.id} className="glass-card p-5">
+                            <span className="text-xs font-medium text-[#8E8E93]">{card.title}</span>
+                            <div className="text-3xl font-semibold tracking-tight text-[#F5F5F7] mt-2 font-mono">
+                              {card.value}
+                            </div>
                             {card.comparison_text && (
-                              <p className={`text-xs mt-1 font-medium ${
-                                card.trend_direction === 'down' ? 'text-red-600' : 'text-slate-500'
+                              <p className={`text-xs mt-2 font-medium flex items-center space-x-1 ${
+                                card.trend_direction === 'down' ? 'text-[#FF453A]' : 'text-[#32D74B]'
                               }`}>
-                                {card.trend_direction === 'down' ? 'v ' : ''}{card.comparison_text}
+                                <span>{card.trend_direction === 'down' ? 'v' : '^'}</span>
+                                <span>{card.comparison_text}</span>
                               </p>
                             )}
-                            <div className="mt-2 text-[10px] text-slate-400 border-t border-slate-200/60 pt-1">
+                            <div className="mt-3 text-[10px] text-[#6E6E73] border-t border-[rgba(255,255,255,0.06)] pt-1.5">
                               Period: {card.period}
                             </div>
                           </div>
                         ))}
                       </div>
-                    </div>
 
-                    {/* Executive Insights Panel */}
-                    {artifacts.InsightReport && (
-                      <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-                            Executive Findings & Verified Diagnosis
-                          </h3>
-                          <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${
-                            health.operating_mode === 'LLM_ENABLED'
-                              ? 'bg-purple-100 text-purple-800 border-purple-200'
-                              : 'bg-blue-100 text-blue-800 border-blue-200'
-                          }`}>
-                            {health.operating_mode === 'LLM_ENABLED'
-                              ? '[Drafted by Gemini with Verified DuckDB Citations]'
-                              : '[Drafted by Deterministic Catalog Engine]'}
-                          </span>
-                        </div>
-                        <p className="text-sm text-slate-700 leading-relaxed font-medium bg-indigo-50/40 p-4 rounded border border-indigo-100 mb-4">
-                          {artifacts.InsightReport.executive_summary}
-                        </p>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div>
-                            <h4 className="text-xs font-bold text-slate-600 uppercase mb-2">Observed Findings (Empirically Verified)</h4>
-                            <div className="space-y-2">
-                              {artifacts.InsightReport.observed_findings.map(f => (
-                                <div key={f.id} className="text-xs text-slate-800 bg-slate-50 p-2.5 rounded border border-slate-100">
-                                  <strong>[Verified] {f.claim}</strong>
-                                  <div className="text-[10px] text-slate-400 mt-1 font-mono">Linked result ID: {f.result_id}</div>
-                                </div>
-                              ))}
-                            </div>
+                      {/* Executive Findings & Verified Diagnosis */}
+                      {artifacts.InsightReport && (
+                        <div className="glass-card p-6 space-y-5">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-xs font-semibold text-[#8E8E93] uppercase tracking-wider">
+                              Executive Findings & Verified Diagnosis
+                            </h3>
+                            <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full ${
+                              health.operating_mode === 'LLM_ENABLED' ? 'pill-success' : 'pill-neutral'
+                            }`}>
+                              {health.operating_mode === 'LLM_ENABLED'
+                                ? '[Drafted by Gemini with Verified DuckDB Citations]'
+                                : '[Drafted by Deterministic Catalog Engine]'}
+                            </span>
                           </div>
 
-                          <div>
-                            <h4 className="text-xs font-bold text-slate-600 uppercase mb-2">Suggested Action Proposals</h4>
-                            <div className="space-y-2">
-                              {artifacts.InsightReport.recommended_actions.map(act => (
-                                <div key={act.id} className="text-xs text-slate-800 bg-emerald-50/40 p-2.5 rounded border border-emerald-100">
-                                  <strong className="text-emerald-900">{act.title}</strong>: {act.description}
-                                  <div className="text-[10px] text-emerald-700 mt-1 italic">
-                                    Hypothesis to confirm: {act.hypothesis_to_investigate} (Requires qualitative confirmation)
+                          <p className="text-sm text-[#F5F5F7] leading-relaxed bg-[rgba(255,255,255,0.02)] p-4 rounded-xl border border-[rgba(255,255,255,0.06)]">
+                            {artifacts.InsightReport.executive_summary}
+                          </p>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                              <h4 className="text-[11px] font-semibold text-[#6E6E73] uppercase mb-2">
+                                Observed Findings (Empirically Verified)
+                              </h4>
+                              <div className="space-y-2">
+                                {artifacts.InsightReport.observed_findings.map(f => (
+                                  <div key={f.id} className="text-xs text-[#F5F5F7] bg-[rgba(255,255,255,0.02)] p-3 rounded-xl border border-[rgba(255,255,255,0.06)]">
+                                    <strong className="text-[#2997FF]">[Verified]</strong> {f.claim}
+                                    <div className="text-[10px] text-[#6E6E73] mt-1 font-mono">Linked result ID: {f.result_id}</div>
                                   </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div>
+                              <h4 className="text-[11px] font-semibold text-[#6E6E73] uppercase mb-2">
+                                Suggested Action Proposals
+                              </h4>
+                              <div className="space-y-2">
+                                {artifacts.InsightReport.recommended_actions.map(act => (
+                                  <div key={act.id} className="text-xs text-[#F5F5F7] bg-[rgba(50,215,75,0.04)] p-3 rounded-xl border border-[rgba(50,215,75,0.15)]">
+                                    <strong className="text-[#32D74B]">{act.title}</strong>: {act.description}
+                                    <div className="text-[10px] text-[#8E8E93] mt-1 italic">
+                                      Hypothesis to confirm: {act.hypothesis_to_investigate} (Requires qualitative confirmation)
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Charts and Data Visualizations */}
+                      {artifacts.DashboardSpec.charts && (
+                        <DashboardCharts charts={artifacts.DashboardSpec.charts} />
+                      )}
+
+                      {/* Limitations Banner */}
+                      {artifacts.DashboardSpec.quality_alerts?.length > 0 && (
+                        <div className="glass-card p-5 border border-[rgba(255,159,10,0.25)] bg-[rgba(255,159,10,0.03)]">
+                          <h4 className="text-xs font-semibold text-[#FF9F0A] uppercase tracking-wider mb-2">
+                            [Notice] Data Limitations & Methodological Boundaries
+                          </h4>
+                          <ul className="text-xs text-[#A1A1A6] list-disc list-inside space-y-1">
+                            {artifacts.DashboardSpec.quality_alerts.map((al, idx) => (
+                              <li key={idx}>{al}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="glass-card p-16 text-center text-xs text-[#8E8E93]">
+                      Execute the workflow to generate the validated, interactive dashboard.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 8: CONTEXTUAL CHAT ASSISTANT */}
+              {activeTab === 'chat' && (
+                <div className="space-y-6 max-w-4xl mx-auto">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h2 className="text-2xl font-semibold tracking-tight text-[#F5F5F7]">Contextual Assistant</h2>
+                      <p className="text-sm text-[#8E8E93] mt-1">
+                        Query verified analytical results, trigger recalculations with dynamic filters, and inspect citations.
+                      </p>
+                    </div>
+                    <span className="pill-neutral text-[11px] font-mono px-3 py-1 rounded-full">
+                      Mode: {health.mode_label}
+                    </span>
+                  </div>
+
+                  {/* Suggestion Chips */}
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => handleSendChat('Why do we conclude the decline is concentrated in wholesale?')}
+                      className="btn-apple-secondary text-xs px-3 py-1.5"
+                    >
+                      [Explain wholesale decline concentration]
+                    </button>
+                    <button
+                      onClick={() => handleSendChat('How much was sold in the Metropolitan region?')}
+                      className="btn-apple-secondary text-xs px-3 py-1.5"
+                    >
+                      [Recalculate Metropolitan sales]
+                    </button>
+                    <button
+                      onClick={() => handleSendChat('Which competitor lowered prices to cause the sales drop?')}
+                      className="btn-apple-secondary text-xs px-3 py-1.5 text-[#FF9F0A]"
+                    >
+                      [Test unanswerable query: Competitor]
+                    </button>
+                  </div>
+
+                  {/* Message Stream */}
+                  <div className="glass-card p-5 min-h-[380px] max-h-[520px] overflow-y-auto space-y-4">
+                    {chatMessages.map((msg, i) => (
+                      <div
+                        key={i}
+                        className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
+                      >
+                        <div
+                          className={`max-w-[85%] p-4 text-xs leading-relaxed ${
+                            msg.sender === 'user'
+                              ? 'bg-[#2997FF] text-white rounded-2xl rounded-tr-sm shadow-md'
+                              : 'bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[#F5F5F7] rounded-2xl rounded-tl-sm'
+                          }`}
+                        >
+                          {msg.queryType && (
+                            <div className="mb-2">
+                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                                msg.queryType === 'recalculate_with_filters' || msg.queryType === 'FILTER_RECALCULATION'
+                                  ? 'pill-success'
+                                  : msg.queryType === 'unanswerable_by_data' || msg.queryType === 'UNANSWERABLE'
+                                  ? 'pill-warning'
+                                  : 'pill-accent'
+                              }`}>
+                                {msg.queryType === 'recalculate_with_filters' || msg.queryType === 'FILTER_RECALCULATION' ? '[In-Memory Recalculation: DuckDB / Pandas]' :
+                                 msg.queryType === 'unanswerable_by_data' || msg.queryType === 'UNANSWERABLE' ? '[Notice: Missing Data / Out of Scope]' :
+                                 msg.queryType === 'request_new_analysis' || msg.queryType === 'NEW_ANALYSIS_REQUEST' ? '[Notice: New Analysis Required]' :
+                                 (health.operating_mode === 'LLM_ENABLED' ? '[Gemini Explanation with Audited Citations]' : '[Deterministic Engine Explanation]')}
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="whitespace-pre-wrap">{msg.text}</div>
+
+                          {/* Provenance Citations */}
+                          {msg.citations?.length > 0 && (
+                            <div className="mt-3 pt-2.5 border-t border-[rgba(255,255,255,0.08)] text-[11px] space-y-1.5 text-[#A1A1A6]">
+                              <span className="font-semibold text-[#2997FF] block">Sources & Provenance:</span>
+                              {msg.citations.map((c, idx) => (
+                                <div key={idx} className="bg-[rgba(0,0,0,0.3)] p-2 rounded-lg border border-[rgba(255,255,255,0.06)]">
+                                  <strong className="text-[#F5F5F7]">{c.source_name}</strong> ({c.source_type})
+                                  <div className="text-[10px] text-[#6E6E73] font-mono">Condition: {c.filter_or_condition}</div>
                                 </div>
                               ))}
                             </div>
-                          </div>
+                          )}
+
+                          {msg.limitation && (
+                            <div className="mt-2.5 text-[11px] text-[#FF9F0A] font-semibold bg-[rgba(255,159,10,0.08)] p-2 rounded-lg border border-[rgba(255,159,10,0.2)]">
+                              Limitation: {msg.limitation}
+                            </div>
+                          )}
                         </div>
                       </div>
+                    ))}
+                    {chatLoading && (
+                      <div className="text-xs text-[#6E6E73] italic">Consulting audited analytical results...</div>
                     )}
+                  </div>
 
-                    {/* Detailed Visualizations & Tables */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {artifacts.DashboardSpec.charts.map(chart => (
-                        <div key={chart.id} className="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
-                          <div className="flex justify-between items-start mb-3">
-                            <div>
-                              <h4 className="text-sm font-bold text-slate-900">{chart.title}</h4>
-                              <p className="text-xs text-slate-500 mt-0.5">{chart.question_answered}</p>
-                            </div>
-                            {chart.is_primary_objective && (
-                              <span className="badge-info text-[10px] font-bold px-2 py-0.5 rounded uppercase">
-                                Primary Objective
-                              </span>
-                            )}
+                  {/* Input Form */}
+                  <form
+                    onSubmit={e => { e.preventDefault(); handleSendChat(); }}
+                    className="flex space-x-3"
+                  >
+                    <input
+                      type="text"
+                      value={chatInput}
+                      onChange={e => setChatInput(e.target.value)}
+                      placeholder="Ask a question or request a recalculation with filters..."
+                      className="input-apple flex-1"
+                    />
+                    <button
+                      type="submit"
+                      disabled={chatLoading || !chatInput.trim()}
+                      className="btn-apple-primary px-5 py-2 text-xs"
+                    >
+                      Send
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* TAB 9: PROVENANCE CHAIN */}
+              {activeTab === 'provenance' && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-semibold tracking-tight text-[#F5F5F7]">Provenance Chain & Audit Trail</h2>
+                    <p className="text-sm text-[#8E8E93] mt-1">
+                      Continuous chain of custody from raw input ingestion to visual presentation.
+                    </p>
+                  </div>
+
+                  {artifacts.DashboardSpec?.provenance_chain_summary?.length > 0 ? (
+                    <div className="space-y-3">
+                      {artifacts.DashboardSpec.provenance_chain_summary.map((step, idx) => (
+                        <div key={idx} className="glass-card p-4 flex items-start space-x-3.5">
+                          <div className="w-6 h-6 rounded-full bg-[rgba(41,151,255,0.15)] text-[#2997FF] text-xs font-semibold flex items-center justify-center flex-shrink-0">
+                            {idx + 1}
                           </div>
-
-                          {/* Render Table Representation for Transparency & Reliability */}
-                          <div className="overflow-x-auto mt-4">
-                            <table className="w-full text-xs text-left">
-                              <thead className="bg-slate-50 text-slate-600 uppercase border-b border-slate-200">
-                                <tr>
-                                  {Object.keys(chart.data[0] || {}).map(k => (
-                                    <th key={k} className="py-1.5 px-2.5 font-semibold">{k.replace('_', ' ')}</th>
-                                  ))}
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-100">
-                                {chart.data.map((row, idx) => (
-                                  <tr key={idx} className="hover:bg-slate-50/50">
-                                    {Object.entries(row).map(([k, v]) => (
-                                      <td key={k} className="py-1.5 px-2.5 text-slate-700 font-mono">
-                                        {typeof v === 'number' ? (k.includes('pct') || k.includes('percentage') || k.includes('contrib') ? `${v}%` : `$${v.toLocaleString()}`) : String(v)}
-                                      </td>
-                                    ))}
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                          <div className="flex-1 text-xs font-medium text-[#F5F5F7] pt-0.5">
+                            {step}
                           </div>
                         </div>
                       ))}
                     </div>
-
-                    {/* Data Limitations Banner */}
-                    {artifacts.DashboardSpec.quality_alerts?.length > 0 && (
-                      <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
-                        <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wider mb-1">
-                          [Notice] Data Limitations & Methodological Boundaries
-                        </h4>
-                        <ul className="text-xs text-amber-800 list-disc list-inside space-y-1">
-                          {artifacts.DashboardSpec.quality_alerts.map((al, idx) => (
-                            <li key={idx}>{al}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="bg-white p-8 text-center rounded-lg border border-slate-200 text-sm text-slate-500">
-                    Run the pipeline to generate the validated, interactive dashboard.
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* TAB 8: CONTEXTUAL CHAT ASSISTANT */}
-            {activeTab === 'chat' && (
-              <div className="space-y-4 max-w-4xl mx-auto">
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex justify-between items-center">
-                  <div>
-                    <h2 className="text-sm font-bold text-slate-900">Grounded Conversational Assistant</h2>
-                    <p className="text-xs text-slate-500">Query verified findings, recalculate with filters, and inspect traceable citations.</p>
-                  </div>
-                  <span className="text-[11px] font-mono bg-slate-100 text-slate-600 px-2.5 py-1 rounded">
-                    Mode: {health.mode_label}
-                  </span>
-                </div>
-
-                {/* Pre-canned query buttons */}
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => handleSendChat('Why do we conclude the decline is concentrated in wholesale?')}
-                    className="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-full transition"
-                  >
-                    [Explain wholesale decline concentration]
-                  </button>
-                  <button
-                    onClick={() => handleSendChat('How much was sold in the Metropolitan region?')}
-                    className="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-full transition"
-                  >
-                    [Recalculate Metropolitan sales]
-                  </button>
-                  <button
-                    onClick={() => handleSendChat('Which competitor lowered prices to cause the sales drop?')}
-                    className="text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 px-3 py-1.5 rounded-full transition"
-                  >
-                    [Test unanswerable query: Competitor]
-                  </button>
-                </div>
-
-                {/* Chat Message History */}
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 min-h-[350px] max-h-[500px] overflow-y-auto space-y-4">
-                  {chatMessages.map((msg, i) => (
-                    <div
-                      key={i}
-                      className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
-                    >
-                      <div
-                        className={`max-w-[85%] rounded-lg p-3 text-xs leading-relaxed ${
-                          msg.sender === 'user'
-                            ? 'bg-indigo-600 text-white shadow'
-                            : 'bg-slate-100 text-slate-900 border border-slate-200'
-                        }`}
-                      >
-                        {/* Query Type & Provenance Badge */}
-                        {msg.queryType && (
-                          <div className="mb-2">
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                              msg.queryType === 'recalculate_with_filters' || msg.queryType === 'FILTER_RECALCULATION'
-                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                                : msg.queryType === 'unanswerable_by_data' || msg.queryType === 'UNANSWERABLE'
-                                ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                                : msg.queryType === 'request_new_analysis' || msg.queryType === 'NEW_ANALYSIS_REQUEST'
-                                ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                                : 'bg-purple-100 text-purple-800 border border-purple-300'
-                            }`}>
-                              {msg.queryType === 'recalculate_with_filters' || msg.queryType === 'FILTER_RECALCULATION' ? '[In-Memory Recalculation: DuckDB / Pandas]' :
-                               msg.queryType === 'unanswerable_by_data' || msg.queryType === 'UNANSWERABLE' ? '[Notice: Missing Data / Out of Scope]' :
-                               msg.queryType === 'request_new_analysis' || msg.queryType === 'NEW_ANALYSIS_REQUEST' ? '[Notice: New Analysis Required]' :
-                               (health.operating_mode === 'LLM_ENABLED' ? '[Gemini Explanation with Audited Citations]' : '[Deterministic Engine Explanation]')}
-                            </span>
-                          </div>
-                        )}
-
-                        <div className="whitespace-pre-wrap">{msg.text}</div>
-
-                        {/* Citations & Provenance */}
-                        {msg.citations?.length > 0 && (
-                          <div className="mt-3 pt-2 border-t border-slate-200/80 text-[11px] space-y-1 text-slate-600">
-                            <span className="font-bold text-indigo-900 block">Sources & Provenance:</span>
-                            {msg.citations.map((c, idx) => (
-                              <div key={idx} className="bg-white/80 p-1.5 rounded border border-slate-200">
-                                <strong>{c.source_name}</strong> ({c.source_type})
-                                <div className="text-[10px] text-slate-500 font-mono">Condition: {c.filter_or_condition}</div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {msg.limitation && (
-                          <div className="mt-2 text-[11px] text-amber-800 font-semibold bg-amber-50 p-1.5 rounded border border-amber-200">
-                            Limitation: {msg.limitation}
-                          </div>
-                        )}
-                      </div>
+                  ) : (
+                    <div className="glass-card p-12 text-center text-xs text-[#8E8E93]">
+                      Execute the workflow to generate the end-to-end provenance chain.
                     </div>
-                  ))}
-                  {chatLoading && (
-                    <div className="text-xs text-slate-400 italic">Consulting audited analytical results...</div>
                   )}
                 </div>
-
-                {/* Input box */}
-                <form
-                  onSubmit={e => { e.preventDefault(); handleSendChat(); }}
-                  className="flex space-x-2"
-                >
-                  <input
-                    type="text"
-                    value={chatInput}
-                    onChange={e => setChatInput(e.target.value)}
-                    placeholder="Ask a question regarding the data or request a filtered recalculation..."
-                    className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  />
-                  <button
-                    type="submit"
-                    disabled={chatLoading || !chatInput.trim()}
-                    className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow transition disabled:opacity-50"
-                  >
-                    Send
-                  </button>
-                </form>
-              </div>
-            )}
-
-            {/* TAB 9: PROVENANCE */}
-            {activeTab === 'provenance' && (
-              <div className="space-y-6">
-                <div className="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
-                  <h2 className="text-base font-bold text-slate-900 mb-1">Provenance Chain & Audit Trail</h2>
-                  <p className="text-xs text-slate-500">
-                    Complete end-to-end traceability for every figure: Raw File -&gt; Table Profile -&gt; Transformation -&gt; Analytical Operation -&gt; Validation Check -&gt; Visualization.
-                  </p>
-                </div>
-
-                {artifacts.DashboardSpec?.provenance_chain_summary?.length > 0 ? (
-                  <div className="space-y-4">
-                    {artifacts.DashboardSpec.provenance_chain_summary.map((step, idx) => (
-                      <div key={idx} className="flex items-start space-x-3 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-                        <div className="w-7 h-7 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold flex items-center justify-center border border-indigo-200">
-                          {idx + 1}
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-xs font-semibold text-slate-900">{step}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="bg-white p-8 text-center rounded-lg border border-slate-200 text-sm text-slate-500">
-                    Run the pipeline to generate the complete provenance chain.
-                  </div>
-                )}
-              </div>
-            )}
-          </main>
-
-          {/* Footer */}
-          <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
-            Adaptive Multi-Agent Analytics Platform • Modular architecture with typed Pydantic contracts and DuckDB
-          </footer>
+              )}
+            </main>
+          </div>
         </div>
       );
     }
