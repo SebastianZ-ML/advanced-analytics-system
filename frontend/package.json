@@ -1,0 +1,22 @@
+{
+  "name": "adaptive-analytics-platform-frontend",
+  "version": "1.0.0",
+  "description": "Frontend React + TypeScript para la plataforma multiagente de analítica avanzada y adaptativa",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "chart.js": "^4.4.4",
+    "lucide-react": "^0.439.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "vite": "^5.4.2",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0"
+  }
+}

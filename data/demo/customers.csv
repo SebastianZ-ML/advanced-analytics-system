@@ -1,0 +1,82 @@
+customer_id,customer_name,segment,region,signup_date
+00001,Cliente Corp 1,Empresas B2B,Metropolitana,2025-06-15
+00002,Cliente Corp 2,Retail Directo,Metropolitana,2025-06-21
+00003,Cliente Corp 3,Empresas B2B,Centro,2026-01-01
+00004,Cliente Corp 4,Empresas B2B,Sur,2025-09-25
+00005,Cliente Corp 5,Retail Directo,Sur,2025-10-09
+00006,Cliente Corp 6,Empresas B2B,Norte,2025-08-27
+00007,Cliente Corp 7,Retail Directo,Norte,2025-10-08
+00008,Cliente Corp 8,Empresas B2B,Metropolitana,2025-11-08
+00009,Cliente Corp 9,Empresas B2B,Norte,2026-01-22
+00010,Cliente Corp 10,Empresas B2B,Centro,2025-07-29
+00011,Cliente Corp 11,Empresas B2B,Sur,2026-01-06
+00012,Cliente Corp 12,Institucional,Centro,2025-12-07
+00013,Cliente Corp 13,Empresas B2B,Norte,2025-07-21
+00014,Cliente Corp 14,Empresas B2B,Sur,2025-08-03
+00015,Cliente Corp 15,Retail Directo,Metropolitana,2025-07-21
+00016,Cliente Corp 16,Retail Directo,Metropolitana,2025-11-14
+00017,Cliente Corp 17,Empresas B2B,Metropolitana,2025-07-30
+00018,Cliente Corp 18,Retail Directo,Norte,2025-06-09
+00019,Cliente Corp 19,Empresas B2B,Norte,2025-08-23
+00020,Cliente Corp 20,Empresas B2B,Sur,2025-12-16
+00021,Cliente Corp 21,Retail Directo,Sur,2025-11-22
+00022,Cliente Corp 22,Empresas B2B,Metropolitana,2025-11-11
+00023,Cliente Corp 23,Empresas B2B,Sur,2025-06-02
+00024,Cliente Corp 24,Retail Directo,Norte,2025-09-14
+00025,Cliente Corp 25,Retail Directo,Metropolitana,2025-12-08
+00026,Cliente Corp 26,Retail Directo,Sur,2025-11-09
+00027,Cliente Corp 27,Empresas B2B,Sur,2025-06-14
+00028,Cliente Corp 28,Retail Directo,Centro,2025-12-17
+00029,Cliente Corp 29,Retail Directo,Sur,2025-12-07
+00030,Cliente Corp 30,Empresas B2B,Sur,2026-01-23
+00031,Cliente Corp 31,Empresas B2B,Metropolitana,2025-06-24
+00032,Cliente Corp 32,Empresas B2B,Sur,2025-12-05
+00033,Cliente Corp 33,Retail Directo,Metropolitana,2025-11-04
+00034,Cliente Corp 34,Retail Directo,Metropolitana,2025-08-28
+00035,Cliente Corp 35,Institucional,Sur,2025-10-07
+00036,Cliente Corp 36,Empresas B2B,Sur,2025-08-02
+00037,Cliente Corp 37,Retail Directo,Metropolitana,2025-10-14
+00038,Cliente Corp 38,Retail Directo,Metropolitana,2025-10-01
+00039,Cliente Corp 39,Empresas B2B,Centro,2025-07-11
+00040,Cliente Corp 40,Institucional,Metropolitana,2025-08-11
+00041,Cliente Corp 41,Retail Directo,Metropolitana,2025-07-18
+00042,Cliente Corp 42,Empresas B2B,Norte,2026-01-02
+00043,Cliente Corp 43,Retail Directo,Sur,2025-09-12
+00044,Cliente Corp 44,Empresas B2B,Centro,2025-12-10
+00045,Cliente Corp 45,Empresas B2B,Centro,2025-12-23
+00046,Cliente Corp 46,Retail Directo,Metropolitana,2026-01-04
+00047,Cliente Corp 47,Empresas B2B,Norte,2025-09-11
+00048,Cliente Corp 48,Empresas B2B,Centro,2025-06-15
+00049,Cliente Corp 49,Empresas B2B,Sur,2025-12-22
+00050,Cliente Corp 50,Empresas B2B,Sur,2026-01-17
+00051,Cliente Corp 51,Retail Directo,Metropolitana,2025-09-04
+00052,Cliente Corp 52,Retail Directo,Metropolitana,2025-10-29
+00053,Cliente Corp 53,Retail Directo,Centro,2025-11-18
+00054,Cliente Corp 54,Empresas B2B,Metropolitana,2025-11-07
+00055,Cliente Corp 55,Retail Directo,Centro,2025-08-25
+00056,Cliente Corp 56,Institucional,Norte,2025-07-15
+00057,Cliente Corp 57,Empresas B2B,Metropolitana,2025-10-12
+00058,Cliente Corp 58,Retail Directo,Sur,2025-07-14
+00059,Cliente Corp 59,Retail Directo,Norte,2025-08-14
+00060,Cliente Corp 60,Empresas B2B,Centro,2025-08-31
+00061,Cliente Corp 61,Empresas B2B,Norte,2026-01-11
+00062,Cliente Corp 62,Empresas B2B,Centro,2025-12-07
+00063,Cliente Corp 63,Empresas B2B,Metropolitana,2026-01-19
+00064,Cliente Corp 64,Empresas B2B,Norte,2025-12-17
+00065,Cliente Corp 65,Retail Directo,Norte,2025-11-12
+00066,Cliente Corp 66,Retail Directo,Norte,2025-11-19
+00067,Cliente Corp 67,Empresas B2B,Centro,2025-09-26
+00068,Cliente Corp 68,Empresas B2B,Sur,2026-01-19
+00069,Cliente Corp 69,Retail Directo,Norte,2025-12-03
+00070,Cliente Corp 70,Institucional,Norte,2025-07-09
+00071,Cliente Corp 71,Retail Directo,Metropolitana,2025-09-09
+00072,Cliente Corp 72,Empresas B2B,Metropolitana,2025-12-04
+00073,Cliente Corp 73,Retail Directo,Norte,2026-01-06
+00074,Cliente Corp 74,Empresas B2B,Metropolitana,2026-01-10
+00075,Cliente Corp 75,Institucional,Centro,2025-10-04
+00076,Cliente Corp 76,Empresas B2B,Sur,2026-01-04
+00077,Cliente Corp 77,Institucional,Sur,2025-08-07
+00078,Cliente Corp 78,Empresas B2B,Sur,2025-10-01
+00079,Cliente Corp 79,Empresas B2B,Norte,2025-06-24
+00080,Cliente Corp 80,Retail Directo,Norte,2025-12-15
+00015,Cliente Corp 15 (Sucursal Secundaria),Retail Directo,Sur,2025-07-21

@@ -1,0 +1,59 @@
+{
+  "dataset_seed": 42,
+  "total_orders_generated": 2607,
+  "total_customers": 81,
+  "total_products": 8,
+  "orphan_orders_count": 8,
+  "invalid_date_orders_count": 2,
+  "duplicate_customer_ids": [
+    "00142"
+  ],
+  "incomplete_period": {
+    "month": "2026-06",
+    "days_present": 4,
+    "is_incomplete": true
+  },
+  "monthly_net_sales": {
+    "2026-01": 5671521.0,
+    "2026-02": 5432551.0,
+    "2026-03": 5054249.5,
+    "2026-04": 1824873.0,
+    "2026-05": 1971025.0,
+    "2026-06": 465530.5
+  },
+  "channel_monthly_net_sales": {
+    "Mayorista / B2B": {
+      "2026-01": 4989286.75,
+      "2026-02": 4651959.25,
+      "2026-03": 4231576.5,
+      "2026-04": 1104755.5,
+      "2026-05": 1311648.25,
+      "2026-06": 418874.75
+    },
+    "Online / Directo": {
+      "2026-01": 272025.75,
+      "2026-02": 292014.5,
+      "2026-03": 319855.25,
+      "2026-04": 265485.0,
+      "2026-05": 174476.5,
+      "2026-06": 27447.25
+    },
+    "Retail / Tiendas": {
+      "2026-01": 410208.5,
+      "2026-02": 488577.25,
+      "2026-03": 502817.75,
+      "2026-04": 454632.5,
+      "2026-05": 484900.25,
+      "2026-06": 19208.5
+    }
+  },
+  "march_net_sales": 5054249.5,
+  "may_net_sales": 1971025.0,
+  "drop_amount_mar_to_may": -3083224.5,
+  "channel_change_mar_to_may": {
+    "Mayorista / B2B": -2919928.25,
+    "Online / Directo": -145378.75,
+    "Retail / Tiendas": -17917.5
+  },
+  "primary_driver_channel": "Mayorista / B2B"
+}
