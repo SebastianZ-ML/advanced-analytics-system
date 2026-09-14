@@ -44,6 +44,26 @@ class LLMQuotaExceededError(LLMProviderError):
     pass
 
 
+class LLMRateLimitError(LLMProviderError):
+    """Raised when rate limit is exceeded (requests/min or tokens/min)."""
+    pass
+
+
+class LLMPermissionError(LLMProviderError):
+    """Raised when permissions or project access is denied (HTTP 403)."""
+    pass
+
+
+class LLMModelNotFoundError(LLMProviderError):
+    """Raised when the specified model does not exist or is deprecated (HTTP 404)."""
+    pass
+
+
+class LLMNetworkError(LLMProviderError):
+    """Raised on network failures, DNS errors, or connection resets."""
+    pass
+
+
 class LLMConfigurationError(LLMProviderError):
     """Raised when model configuration or required environment settings are missing."""
     pass

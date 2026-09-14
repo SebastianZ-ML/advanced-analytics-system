@@ -20,12 +20,18 @@ from app.contracts import (
     ObjectiveSpec,
     RelationshipSpec,
 )
+import re
+from datetime import datetime, timezone
 from app.providers.base import (
     LLMAuthenticationError,
     LLMConfigurationError,
+    LLMModelNotFoundError,
+    LLMNetworkError,
+    LLMPermissionError,
     LLMProvider,
     LLMProviderError,
     LLMQuotaExceededError,
+    LLMRateLimitError,
     LLMTimeoutError,
     LLMValidationError,
 )
@@ -49,12 +55,14 @@ class GeminiProvider(LLMProvider):
         if not self._api_key:
             raise LLMAuthenticationError("GEMINI_API_KEY is not configured.")
 
+        # HttpOptions.timeout in the google-genai SDK expects MILLISECONDS.
+        # It converts it internally via: timeout / 1000.0 for httpx.
+        timeout_ms = float(self._timeout_seconds * 1000.0)
         http_options = types.HttpOptions(
-            timeout=float(min(self._timeout_seconds, 15.0)),
+            timeout=timeout_ms,
             retry_options=types.HttpRetryOptions(attempts=1)
         )
         self._client = genai.Client(api_key=self._api_key, http_options=http_options)
-
 
     @property
     def provider_name(self) -> str:
@@ -65,8 +73,48 @@ class GeminiProvider(LLMProvider):
         return self._model_name
 
     @property
+    def base_url(self) -> str:
+        return "https://generativelanguage.googleapis.com"
+
+    @property
+    def effective_timeout_seconds(self) -> int:
+        return self._timeout_seconds
+
+    @property
     def is_deterministic_fallback(self) -> bool:
         return False
+
+    def _sanitize_string(self, text: str) -> str:
+        if not text:
+            return ""
+        sanitized = text
+        if self._api_key:
+            sanitized = sanitized.replace(self._api_key, "[REDACTED_API_KEY]")
+        sanitized = re.sub(r"AIza[0-9A-Za-z-_]{35}", "[REDACTED_API_KEY]", sanitized)
+        return sanitized
+
+    def _classify_exception(self, e: Exception) -> LLMProviderError:
+        """Categorizes an exception into a typed LLMProviderError with sanitized message."""
+        sanitized_err = self._sanitize_string(str(e))
+        err_low = sanitized_err.lower()
+
+        if "timeout" in err_low or "timed out" in err_low:
+            return LLMTimeoutError(f"Tiempo de espera agotado al conectar con Gemini ({self._timeout_seconds}s): {sanitized_err}")
+        if any(w in err_low for w in ["401", "unauthenticated", "invalid api key", "api_key"]):
+            return LLMAuthenticationError(f"Error de autenticacion con Gemini API: {sanitized_err}")
+        if any(w in err_low for w in ["403", "permission_denied", "forbidden"]):
+            return LLMPermissionError(f"Permiso denegado para acceder al modelo Gemini: {sanitized_err}")
+        if "404" in err_low or ("model" in err_low and "not found" in err_low):
+            return LLMModelNotFoundError(f"Modelo '{self._model_name}' no disponible o inexistente: {sanitized_err}")
+        if "quotafailure" in err_low or "quota exceeded" in err_low:
+            return LLMQuotaExceededError(f"Cuota agotada en el proveedor (Free Tier / Plan): {sanitized_err}")
+        if any(w in err_low for w in ["429", "resource_exhausted", "rate limit", "too many requests"]):
+            return LLMRateLimitError(f"Limite de solicitudes o tokens excedido temporalmente: {sanitized_err}")
+        if "503" in err_low or "unavailable" in err_low or "high demand" in err_low:
+            return LLMProviderError(f"Servicio de Gemini temporalmente no disponible por alta demanda (503 UNAVAILABLE): {sanitized_err}")
+        if any(w in err_low for w in ["connect", "dns", "connection reset", "network", "getaddrinfo"]):
+            return LLMNetworkError(f"Fallo de red o conexion con Gemini: {sanitized_err}")
+        return LLMProviderError(f"Fallo en la llamada a Gemini ({sanitized_err})")
 
     def _execute_with_retry(
         self,
@@ -83,10 +131,13 @@ class GeminiProvider(LLMProvider):
         """
         interaction_id = f"llm_{uuid.uuid4().hex[:10]}"
         start_time = time.time()
+        overall_deadline = start_time + self._timeout_seconds
         last_exception: Optional[Exception] = None
 
         config_args = {
-            "response_mime_type": "application/json"
+            "response_mime_type": "application/json",
+            "temperature": 0.1,
+            "max_output_tokens": 1500
         }
         if system_instruction:
             config_args["system_instruction"] = system_instruction
@@ -106,7 +157,7 @@ class GeminiProvider(LLMProvider):
                 duration_ms = int((time.time() - start_time) * 1000)
                 text = response.text or ""
                 if not text.strip():
-                    raise LLMProviderError("Empty response received from Gemini.")
+                    raise LLMProviderError("Respuesta vacia recibida de Gemini.")
 
                 # Audit log success (no secrets)
                 input_toks = getattr(response.usage_metadata, "prompt_token_count", 0) if hasattr(response, "usage_metadata") else 0
@@ -131,16 +182,21 @@ class GeminiProvider(LLMProvider):
             except Exception as e:
                 last_exception = e
                 err_str = str(e).lower()
-                # Check for rate limits or server errors
-                is_transient = any(code in err_str for code in ["429", "503", "500", "resource_exhausted", "timeout"])
-                if is_transient and attempt < self._max_retries:
-                    backoff = (2 ** attempt) * 1.5
+                # Do NOT retry authentication, permission or model not found errors
+                is_fatal = any(w in err_str for w in ["401", "403", "404", "unauthenticated", "invalid api key"])
+                if is_fatal:
+                    break
+
+                is_transient = any(code in err_str for code in ["429", "503", "500", "resource_exhausted"])
+                remaining_time = overall_deadline - time.time()
+                if is_transient and attempt < self._max_retries and remaining_time > 5.0:
+                    backoff = min((2 ** attempt) * 1.5, remaining_time - 2.0)
                     time.sleep(backoff)
                     continue
                 break
 
         duration_ms = int((time.time() - start_time) * 1000)
-        sanitized_err = str(last_exception).replace(self._api_key, "[REDACTED_API_KEY]") if self._api_key else str(last_exception)
+        sanitized_err = self._sanitize_string(str(last_exception))
 
         DatabaseService.log_llm_interaction(
             interaction_id=interaction_id,
@@ -155,14 +211,133 @@ class GeminiProvider(LLMProvider):
             context_artifacts=context_artifacts or []
         )
 
-        err_low = str(last_exception).lower()
-        if "timeout" in err_low or "timed out" in err_low:
-            raise LLMTimeoutError(f"Timeout connecting to Gemini: {sanitized_err}") from last_exception
-        if any(w in err_low for w in ["401", "unauthenticated", "invalid api key", "permission_denied", "api_key"]):
-            raise LLMAuthenticationError(f"Authentication failed for Gemini API: {sanitized_err}") from last_exception
-        if any(w in err_low for w in ["429", "resource_exhausted", "quota", "rate limit"]):
-            raise LLMQuotaExceededError(f"Quota exceeded for Gemini API: {sanitized_err}") from last_exception
-        raise LLMProviderError(f"Gemini API call failed ({sanitized_err})") from last_exception
+        typed_exc = self._classify_exception(last_exception)
+        raise typed_exc from last_exception
+
+    # -----------------------------------------------------------------------
+    # Diagnostics: Separated Minimal and Structured Checks
+    # -----------------------------------------------------------------------
+    def test_minimal_connection(self) -> Dict[str, Any]:
+        """
+        Executes a minimal test to verify connectivity and short text generation
+        without sending any user data.
+        """
+        t0 = time.time()
+        now_iso = datetime.now(timezone.utc).isoformat()
+        try:
+            config = types.GenerateContentConfig(
+                max_output_tokens=10,
+                temperature=0.0
+            )
+            response = self._client.models.generate_content(
+                model=self._model_name,
+                contents="Respond with: OK",
+                config=config
+            )
+            duration_ms = int((time.time() - t0) * 1000)
+            in_toks = getattr(response.usage_metadata, "prompt_token_count", 0) if hasattr(response, "usage_metadata") else 0
+            out_toks = getattr(response.usage_metadata, "candidates_token_count", 0) if hasattr(response, "usage_metadata") else 0
+            raw_text = (response.text or "").strip()
+
+            return {
+                "check_name": "Peticion Minima (Conectividad y Generacion)",
+                "success": True,
+                "duration_ms": duration_ms,
+                "input_tokens": in_toks,
+                "output_tokens": out_toks,
+                "response_preview": raw_text[:50],
+                "error": None,
+                "error_category": None,
+                "timestamp": now_iso
+            }
+        except Exception as e:
+            duration_ms = int((time.time() - t0) * 1000)
+            typed_err = self._classify_exception(e)
+            return {
+                "check_name": "Peticion Minima (Conectividad y Generacion)",
+                "success": False,
+                "duration_ms": duration_ms,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "response_preview": None,
+                "error": self._sanitize_string(str(e)),
+                "error_category": typed_err.__class__.__name__,
+                "timestamp": now_iso
+            }
+
+    def test_structured_connection(self) -> Dict[str, Any]:
+        """
+        Executes a small structured test against ObjectiveSpec schema
+        to verify that the structured output pipeline functions correctly.
+        """
+        t0 = time.time()
+        now_iso = datetime.now(timezone.utc).isoformat()
+        test_catalog = {
+            "demo_table": {
+                "columns": {
+                    "id": "string",
+                    "date": "date",
+                    "amount": "float"
+                }
+            }
+        }
+        prompt = (
+            "User Question: What is the monthly total amount?\n"
+            f"Catalog: {json.dumps(test_catalog)}"
+        )
+        sys_inst = "You are Organizer Agent. Structure the question into ObjectiveSpec JSON using the provided catalog columns."
+
+        try:
+            config = types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=ObjectiveSpec,
+                temperature=0.1,
+                max_output_tokens=2048,
+                system_instruction=sys_inst
+            )
+            response = self._client.models.generate_content(
+                model=self._model_name,
+                contents=prompt,
+                config=config
+            )
+            duration_ms = int((time.time() - t0) * 1000)
+            in_toks = getattr(response.usage_metadata, "prompt_token_count", 0) if hasattr(response, "usage_metadata") else 0
+            out_toks = getattr(response.usage_metadata, "candidates_token_count", 0) if hasattr(response, "usage_metadata") else 0
+            raw_text = (response.text or "").strip()
+
+            # Validate against ObjectiveSpec
+            spec = ObjectiveSpec.model_validate_json(raw_text)
+
+            return {
+                "check_name": "Peticion Estructurada Pequena (Esquema ObjectiveSpec)",
+                "success": True,
+                "duration_ms": duration_ms,
+                "input_tokens": in_toks,
+                "output_tokens": out_toks,
+                "validated_objective": spec.operational_objective[:100],
+                "error": None,
+                "error_category": None,
+                "timestamp": now_iso
+            }
+        except Exception as e:
+            duration_ms = int((time.time() - t0) * 1000)
+            err_str = str(e)
+            if "validation" in err_str.lower() or "schema" in err_str.lower() or "json" in err_str.lower():
+                err_cat = "LLMValidationError"
+            else:
+                err_cat = self._classify_exception(e).__class__.__name__
+
+            return {
+                "check_name": "Peticion Estructurada Pequena (Esquema ObjectiveSpec)",
+                "success": False,
+                "duration_ms": duration_ms,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "validated_objective": None,
+                "error": self._sanitize_string(err_str),
+                "error_category": err_cat,
+                "timestamp": now_iso
+            }
 
     # -----------------------------------------------------------------------
     # 1. Structure Objective

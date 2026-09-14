@@ -519,6 +519,13 @@
       const [uploading, setUploading] = useState(false);
       const [uploadError, setUploadError] = useState(null);
 
+      // LLM Diagnostics & Configuration State
+      const [showLlmConfigModal, setShowLlmConfigModal] = useState(false);
+      const [llmStatus, setLlmStatus] = useState(null);
+      const [llmTesting, setLlmTesting] = useState(false);
+      const [llmTestResult, setLlmTestResult] = useState(null);
+      const [llmTestError, setLlmTestError] = useState(null);
+
       // Business Question & Interpretation State
       const [businessQuestion, setBusinessQuestion] = useState(
         "¿Cómo evolucionaron las ventas durante los periodos observados y dónde se concentra la mayor variación?"
@@ -578,6 +585,29 @@
         }
         return () => clearInterval(timerRef.current);
       }, [executing]);
+
+      const loadLlmStatus = async () => {
+        try {
+          const data = await safeFetchJson('/api/llm/status');
+          setLlmStatus(data);
+        } catch (e) {
+          console.error('Error al cargar estado LLM:', e);
+        }
+      };
+
+      const handleTestLlmConnection = async () => {
+        setLlmTesting(true);
+        setLlmTestError(null);
+        setLlmTestResult(null);
+        try {
+          const data = await safeFetchJson('/api/llm/test_connection', { method: 'POST' });
+          setLlmTestResult(data);
+        } catch (e) {
+          setLlmTestError(e.message || 'Error al ejecutar prueba de conexion LLM');
+        } finally {
+          setLlmTesting(false);
+        }
+      };
 
       const loadProjects = async () => {
         try {
@@ -970,8 +1000,20 @@
                 <span>Verificación</span>
                 <span className="text-[#32D74B] font-medium">100% Determinista</span>
               </div>
-              <div className="pt-2 border-t border-[rgba(255,255,255,0.04)] text-[10px] text-[#6E6E73]">
-                {health.mode_label || 'Modo Activo'}
+              <div className="pt-2 border-t border-[rgba(255,255,255,0.04)] flex items-center justify-between">
+                <span className="text-[10px] text-[#6E6E73] truncate mr-2">
+                  {health.mode_label || 'Modo Activo'}
+                </span>
+                <button
+                  onClick={() => {
+                    setShowLlmConfigModal(true);
+                    loadLlmStatus();
+                  }}
+                  className="pill-accent px-2 py-0.5 text-[10px] rounded hover:bg-[rgba(41,151,255,0.25)] transition shrink-0"
+                  title="Configurar y probar conexion LLM"
+                >
+                  Diagnostico
+                </button>
               </div>
             </div>
           </aside>
@@ -1003,6 +1045,17 @@
 
               {/* Step Navigation shortcuts */}
               <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => {
+                    setShowLlmConfigModal(true);
+                    loadLlmStatus();
+                  }}
+                  className="btn-apple-secondary px-3 py-1.5 text-xs flex items-center space-x-1.5"
+                  title="Ver configuracion y probar conexion LLM"
+                >
+                  <IconActivity />
+                  <span>Probar Conexion LLM</span>
+                </button>
                 {currentStep !== 'execution' && currentStep !== 'results' && (
                   <button
                     onClick={() => {
@@ -1498,7 +1551,7 @@
                       {interpretation.provider_notice && (
                         <div className="p-3.5 bg-[rgba(41,151,255,0.08)] border border-[rgba(41,151,255,0.25)] rounded-xl text-xs text-[#2997FF] flex items-center space-x-2.5">
                           <IconInfo />
-                          <span>{interpretation.provider_notice}</span>
+                          <span>{String(interpretation.provider_notice).replace(/&#x20;/g, ' ').trim()}</span>
                         </div>
                       )}
 
@@ -1876,6 +1929,201 @@
                   </div>
                 </div>
               )}
+              {/* MODAL DE CONFIGURACION Y DIAGNOSTICO LLM */}
+              {showLlmConfigModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[rgba(0,0,0,0.75)] backdrop-blur-md">
+                  <div className="glass-modal w-full max-w-2xl rounded-2xl p-6 space-y-6 max-h-[90vh] overflow-y-auto border border-[rgba(255,255,255,0.15)] shadow-2xl">
+                    <div className="flex items-center justify-between pb-3 border-b border-[rgba(255,255,255,0.08)]">
+                      <div className="flex items-center space-x-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-[rgba(41,151,255,0.15)] text-[#2997FF] flex items-center justify-center">
+                          <IconActivity />
+                        </div>
+                        <div>
+                          <h3 className="text-base font-semibold text-[#F5F5F7]">Configuracion y Diagnostico LLM</h3>
+                          <p className="text-xs text-[#8E8E93]">Pruebas verificables sin exposicion de credenciales</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setShowLlmConfigModal(false)}
+                        className="text-[#8E8E93] hover:text-[#FFFFFF] text-sm px-2 py-1"
+                      >
+                        Cerrar
+                      </button>
+                    </div>
+
+                    {/* Configuracion Efectiva */}
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-semibold text-[#8E8E93] uppercase tracking-wider">
+                        Configuracion Efectiva del Proveedor
+                      </h4>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                        <div className="p-3 bg-[rgba(255,255,255,0.03)] rounded-xl border border-[rgba(255,255,255,0.06)]">
+                          <span className="text-[#8E8E93] block text-[11px]">Proveedor:</span>
+                          <span className="font-semibold text-[#F5F5F7] font-mono mt-0.5 block">
+                            {llmStatus?.provider || 'gemini'}
+                          </span>
+                        </div>
+                        <div className="p-3 bg-[rgba(255,255,255,0.03)] rounded-xl border border-[rgba(255,255,255,0.06)]">
+                          <span className="text-[#8E8E93] block text-[11px]">Modelo Activo:</span>
+                          <span className="font-semibold text-[#2997FF] font-mono mt-0.5 block">
+                            {llmStatus?.model || 'gemini-3.5-flash'}
+                          </span>
+                        </div>
+                        <div className="p-3 bg-[rgba(255,255,255,0.03)] rounded-xl border border-[rgba(255,255,255,0.06)]">
+                          <span className="text-[#8E8E93] block text-[11px]">Timeout Efectivo:</span>
+                          <span className="font-semibold text-[#F5F5F7] font-mono mt-0.5 block">
+                            {llmStatus?.timeout_seconds ? `${llmStatus.timeout_seconds} s` : '60 s'}
+                          </span>
+                        </div>
+                        <div className="p-3 bg-[rgba(255,255,255,0.03)] rounded-xl border border-[rgba(255,255,255,0.06)]">
+                          <span className="text-[#8E8E93] block text-[11px]">Estado de Credencial:</span>
+                          <span className="font-semibold text-[#32D74B] font-mono mt-0.5 block">
+                            {llmStatus?.api_key_configured ? `Configurada (${llmStatus.api_key_length} car.)` : 'No Configurada'}
+                          </span>
+                        </div>
+                        <div className="p-3 bg-[rgba(255,255,255,0.03)] rounded-xl border border-[rgba(255,255,255,0.06)] col-span-2">
+                          <span className="text-[#8E8E93] block text-[11px]">URL Base del Proveedor:</span>
+                          <span className="font-mono text-[11px] text-[#A1A1A6] mt-0.5 block truncate">
+                            {llmStatus?.base_url || 'https://generativelanguage.googleapis.com'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Boton de Prueba Manual */}
+                    <div className="p-4 bg-[rgba(255,255,255,0.02)] rounded-xl border border-[rgba(255,255,255,0.06)] flex items-center justify-between">
+                      <div className="text-xs text-[#8E8E93] space-y-0.5">
+                        <span className="text-[#F5F5F7] font-medium block">Diagnostico de Conectividad y Esquema</span>
+                        <span>Ejecuta una comprobacion minima y una comprobacion estructurada sin enviar datos del usuario.</span>
+                      </div>
+                      <button
+                        onClick={handleTestLlmConnection}
+                        disabled={llmTesting}
+                        className="btn-apple-primary px-4 py-2 text-xs flex items-center space-x-2 shrink-0 ml-4"
+                      >
+                        <IconRefresh />
+                        <span>{llmTesting ? 'Comprobando...' : 'Probar conexion LLM'}</span>
+                      </button>
+                    </div>
+
+                    {/* Error de Red al ejecutar la prueba */}
+                    {llmTestError && (
+                      <div className="p-3 bg-[rgba(255,69,58,0.1)] border border-[rgba(255,69,58,0.3)] rounded-xl text-xs text-[#FF453A]">
+                        {llmTestError}
+                      </div>
+                    )}
+
+                    {/* Resultados del Diagnostico */}
+                    {llmTestResult && (
+                      <div className="space-y-4 pt-2">
+                        {/* Estado General */}
+                        <div className={`p-4 rounded-xl border text-xs flex items-center justify-between ${
+                          llmTestResult.overall_status === 'HEALTHY'
+                            ? 'bg-[rgba(50,215,75,0.1)] border-[rgba(50,215,75,0.3)] text-[#32D74B]'
+                            : llmTestResult.overall_status === 'LLMQuotaExceededError' || llmTestResult.overall_status === 'QUOTA_EXCEEDED'
+                            ? 'bg-[rgba(255,159,10,0.1)] border-[rgba(255,159,10,0.3)] text-[#FF9F0A]'
+                            : 'bg-[rgba(255,69,58,0.1)] border-[rgba(255,69,58,0.3)] text-[#FF453A]'
+                        }`}>
+                          <div>
+                            <span className="font-semibold text-sm block">
+                              {llmTestResult.overall_status === 'HEALTHY'
+                                ? 'Conexion y Esquema Verificados (100% Operativo)'
+                                : llmTestResult.overall_status === 'LLMQuotaExceededError' || llmTestResult.overall_status === 'QUOTA_EXCEEDED'
+                                ? 'Cuota de API Agotada en el Proveedor (Free Tier Alcanzado)'
+                                : llmTestResult.overall_status === 'LLMValidationError' || llmTestResult.overall_status === 'SCHEMA_ERROR'
+                                ? 'Conectividad Valida, pero Falla en Esquema de Salida'
+                                : 'Fallo en la Comprobacion del Proveedor LLM'}
+                            </span>
+                            <span className="text-[11px] font-mono mt-0.5 block opacity-80">
+                              ID de Seguimiento: {llmTestResult.trace_id}
+                            </span>
+                          </div>
+                          <span className="pill-neutral px-2.5 py-1 text-[11px] font-mono uppercase">
+                            {llmTestResult.overall_status}
+                          </span>
+                        </div>
+
+                        {/* Desglose de las 2 comprobaciones */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                          {/* Comprobacion 1: Peticion Minima */}
+                          <div className="p-4 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] rounded-xl space-y-2.5">
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-[#F5F5F7]">1. Peticion Minima</span>
+                              <span className={llmTestResult.minimal_check.success ? 'pill-success px-2 py-0.5 text-[10px]' : 'pill-warning px-2 py-0.5 text-[10px]'}>
+                                {llmTestResult.minimal_check.success ? 'Conectado' : 'Fallo'}
+                              </span>
+                            </div>
+                            <div className="space-y-1 text-[11px] text-[#8E8E93]">
+                              <div className="flex justify-between">
+                                <span>Duracion:</span>
+                                <span className="font-mono text-[#F5F5F7]">{llmTestResult.minimal_check.duration_ms} ms</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Tokens Consumidos:</span>
+                                <span className="font-mono text-[#F5F5F7]">
+                                  {llmTestResult.minimal_check.input_tokens || 0} in / {llmTestResult.minimal_check.output_tokens || 0} out
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Hora Comprobacion:</span>
+                                <span className="font-mono text-[#A1A1A6]">
+                                  {new Date(llmTestResult.minimal_check.timestamp).toLocaleTimeString()}
+                                </span>
+                              </div>
+                            </div>
+                            {llmTestResult.minimal_check.error && (
+                              <div className="p-2 bg-[rgba(255,69,58,0.08)] border border-[rgba(255,69,58,0.2)] rounded-lg text-[11px] text-[#FF453A] space-y-1">
+                                <span className="font-semibold block">Categoria: {llmTestResult.minimal_check.error_category}</span>
+                                <p className="line-clamp-3 font-mono">{llmTestResult.minimal_check.error}</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Comprobacion 2: Peticion Estructurada */}
+                          <div className="p-4 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] rounded-xl space-y-2.5">
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-[#F5F5F7]">2. Peticion Estructurada</span>
+                              <span className={llmTestResult.structured_check.success ? 'pill-success px-2 py-0.5 text-[10px]' : 'pill-warning px-2 py-0.5 text-[10px]'}>
+                                {llmTestResult.structured_check.success ? 'Esquema Valido' : 'Fallo Esquema'}
+                              </span>
+                            </div>
+                            <div className="space-y-1 text-[11px] text-[#8E8E93]">
+                              <div className="flex justify-between">
+                                <span>Duracion:</span>
+                                <span className="font-mono text-[#F5F5F7]">{llmTestResult.structured_check.duration_ms} ms</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Tokens Consumidos:</span>
+                                <span className="font-mono text-[#F5F5F7]">
+                                  {llmTestResult.structured_check.input_tokens || 0} in / {llmTestResult.structured_check.output_tokens || 0} out
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Hora Comprobacion:</span>
+                                <span className="font-mono text-[#A1A1A6]">
+                                  {new Date(llmTestResult.structured_check.timestamp).toLocaleTimeString()}
+                                </span>
+                              </div>
+                            </div>
+                            {llmTestResult.structured_check.error && (
+                              <div className="p-2 bg-[rgba(255,159,10,0.08)] border border-[rgba(255,159,10,0.2)] rounded-lg text-[11px] text-[#FF9F0A] space-y-1">
+                                <span className="font-semibold block">Categoria: {llmTestResult.structured_check.error_category}</span>
+                                <p className="line-clamp-3 font-mono">{llmTestResult.structured_check.error}</p>
+                              </div>
+                            )}
+                            {llmTestResult.structured_check.validated_objective && (
+                              <p className="text-[11px] text-[#32D74B] font-mono truncate">
+                                Objetivo: {llmTestResult.structured_check.validated_objective}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
             </main>
           </div>
         </div>

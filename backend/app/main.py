@@ -18,6 +18,7 @@ from app.api.projects import router as projects_router
 from app.api.pipeline import router as pipeline_router
 from app.api.chat import router as chat_router
 from app.api.samples import router as samples_router
+from app.api.llm import router as llm_router
 
 
 @asynccontextmanager
@@ -124,6 +125,7 @@ app.include_router(projects_router)
 app.include_router(pipeline_router)
 app.include_router(chat_router)
 app.include_router(samples_router)
+app.include_router(llm_router)
 
 
 @app.get("/api/health")
