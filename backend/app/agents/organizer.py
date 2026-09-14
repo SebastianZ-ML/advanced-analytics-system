@@ -7,6 +7,14 @@ from typing import Any, Dict, List, Optional
 from app.agents.base import BaseAgent
 from app.contracts import AmbiguityItem, DataCatalog, ObjectiveSpec
 from app.providers import ContextBuilder, LLMProvider, get_llm_provider
+from app.providers.base import (
+    LLMAuthenticationError,
+    LLMConfigurationError,
+    LLMProviderError,
+    LLMQuotaExceededError,
+    LLMTimeoutError,
+    LLMValidationError,
+)
 
 
 class OrganizerAgent(BaseAgent):
@@ -28,6 +36,9 @@ class OrganizerAgent(BaseAgent):
         provider = get_llm_provider(self._override_provider)
         catalog_summary = ContextBuilder.build_catalog_summary(catalog) if catalog else {}
 
+        fallback_reason: Optional[str] = None
+        provider_notice: Optional[str] = None
+
         if not provider.is_deterministic_fallback:
             try:
                 spec = provider.structure_objective(
@@ -37,9 +48,29 @@ class OrganizerAgent(BaseAgent):
                     user_clarifications=user_clarifications
                 )
                 return spec
+            except LLMTimeoutError as e:
+                fallback_reason = "timeout"
+                provider_notice = "Interpretación estructurada mediante fallback determinista: El proveedor LLM no respondió a tiempo (Timeout). Se preservó el objetivo original y se descubrieron métricas a partir del catálogo."
+                print(f"[OrganizerAgent] Fallback activated (Timeout): {e}")
+            except LLMAuthenticationError as e:
+                fallback_reason = "authentication_error"
+                provider_notice = "Interpretación estructurada mediante fallback determinista: Clave de API no configurada o rechazada. Se utilizó el analizador determinista del catálogo."
+                print(f"[OrganizerAgent] Fallback activated (Authentication): {e}")
+            except LLMQuotaExceededError as e:
+                fallback_reason = "quota_exceeded"
+                provider_notice = "Interpretación estructurada mediante fallback determinista: Límite de tasa o cuota de API excedida. Se utilizó el analizador determinista del catálogo."
+                print(f"[OrganizerAgent] Fallback activated (Quota): {e}")
+            except LLMValidationError as e:
+                fallback_reason = "schema_validation_error"
+                provider_notice = "Interpretación estructurada mediante fallback determinista: La salida del modelo no cumplió con el esquema formal. Se utilizó el analizador determinista del catálogo."
+                print(f"[OrganizerAgent] Fallback activated (Schema): {e}")
             except Exception as e:
-                # Sanitized fallback with transparent indication
-                print(f"[OrganizerAgent] Fallback activated after LLM provider error: {e}")
+                fallback_reason = "provider_error"
+                provider_notice = f"Interpretación estructurada mediante fallback determinista: Fallo general del proveedor ({type(e).__name__}). Se utilizó el analizador determinista del catálogo."
+                print(f"[OrganizerAgent] Fallback activated (General): {e}")
+        else:
+            fallback_reason = "no_llm_configured"
+            provider_notice = "Modo Demostración sin LLM: Interpretación determinista generada a partir del catálogo de datos."
 
         # Dynamic discovery from catalog when available
         clarifications = user_clarifications or {}
@@ -139,5 +170,7 @@ class OrganizerAgent(BaseAgent):
                 "Prescriptive optimizations requiring unmodeled behavioral elasticities."
             ],
             status="confirmed" if all(a.status == "resolved" for a in [ambiguity_metric, ambiguity_cutoff]) else "draft",
-            is_demo_mode=True
+            is_demo_mode=provider.is_deterministic_fallback or (fallback_reason is not None),
+            provider_notice=provider_notice,
+            fallback_reason=fallback_reason
         )

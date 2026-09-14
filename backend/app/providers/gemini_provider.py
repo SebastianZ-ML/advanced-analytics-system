@@ -22,8 +22,10 @@ from app.contracts import (
 )
 from app.providers.base import (
     LLMAuthenticationError,
+    LLMConfigurationError,
     LLMProvider,
     LLMProviderError,
+    LLMQuotaExceededError,
     LLMTimeoutError,
     LLMValidationError,
 )
@@ -153,8 +155,13 @@ class GeminiProvider(LLMProvider):
             context_artifacts=context_artifacts or []
         )
 
-        if "timeout" in str(last_exception).lower():
+        err_low = str(last_exception).lower()
+        if "timeout" in err_low or "timed out" in err_low:
             raise LLMTimeoutError(f"Timeout connecting to Gemini: {sanitized_err}") from last_exception
+        if any(w in err_low for w in ["401", "unauthenticated", "invalid api key", "permission_denied", "api_key"]):
+            raise LLMAuthenticationError(f"Authentication failed for Gemini API: {sanitized_err}") from last_exception
+        if any(w in err_low for w in ["429", "resource_exhausted", "quota", "rate limit"]):
+            raise LLMQuotaExceededError(f"Quota exceeded for Gemini API: {sanitized_err}") from last_exception
         raise LLMProviderError(f"Gemini API call failed ({sanitized_err})") from last_exception
 
     # -----------------------------------------------------------------------

@@ -39,6 +39,16 @@ class LLMAuthenticationError(LLMProviderError):
     pass
 
 
+class LLMQuotaExceededError(LLMProviderError):
+    """Raised when provider rate limit or quota is exceeded (e.g. HTTP 429)."""
+    pass
+
+
+class LLMConfigurationError(LLMProviderError):
+    """Raised when model configuration or required environment settings are missing."""
+    pass
+
+
 @dataclass
 class LLMInteractionRecord:
     interaction_id: str

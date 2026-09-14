@@ -52,17 +52,23 @@ def interpret_business_objective(project_id: str, req: InterpretObjectiveRequest
 
     # Load tables for profiling
     loaded_tables = {}
+    file_metadata = {}
     for finfo in files_info:
         tname = finfo["table_name"]
         df = FileManager.read_table_dataframe(finfo["file_path"], sheet_name=finfo.get("sheet_name"))
         loaded_tables[tname] = df
+        file_metadata[tname] = {
+            "filename": finfo.get("filename", f"{tname}.csv"),
+            "sheet_name": finfo.get("sheet_name"),
+            "file_hash": finfo.get("file_hash", "UNKNOWN_HASH")
+        }
 
     # Audit & Profile tables
     auditor = DataAuditorAgent()
-    catalog, dq_report, relationships = auditor.audit_dataset(
+    catalog, dq_report, relationships = auditor.audit_project_tables(
         project_id=project_id,
-        tables=loaded_tables,
-        files_info=files_info
+        loaded_tables=loaded_tables,
+        file_metadata=file_metadata
     )
 
     # Structure objective through Organizer
@@ -117,7 +123,10 @@ def interpret_business_objective(project_id: str, req: InterpretObjectiveRequest
         "tables_used": list(loaded_tables.keys()),
         "assumptions": objective_spec.assumptions,
         "clarifications_needed": clarification_options,
-        "acceptance_criteria": objective_spec.acceptance_criteria
+        "acceptance_criteria": objective_spec.acceptance_criteria,
+        "is_demo_mode": getattr(objective_spec, "is_demo_mode", False),
+        "provider_notice": getattr(objective_spec, "provider_notice", None),
+        "fallback_reason": getattr(objective_spec, "fallback_reason", None)
     }
 
 

@@ -1,6 +1,7 @@
 """
 FastAPI router for downloadable sample datasets and independent verification cards.
 """
+import uuid
 from pathlib import Path
 from typing import Any, Dict, List
 from fastapi import APIRouter, HTTPException
@@ -68,7 +69,7 @@ def load_sample_to_project(dataset_id: str, project_id: str) -> Dict[str, Any]:
                 tbl_name = f"{file_path.stem.lower()}_{sname.lower()}"
                 fhash = FileManager.calculate_sha256(file_path)
                 df = FileManager.read_table_dataframe(file_path, sheet_name=sname)
-                fid = f"file_{dataset_id}_{tbl_name[:8]}"
+                fid = f"file_{dataset_id}_{tbl_name[:8]}_{uuid.uuid4().hex[:8]}"
                 DatabaseService.delete_project_file_by_table(project_id, tbl_name)
                 DatabaseService.add_project_file(
                     file_id=fid,
@@ -86,7 +87,7 @@ def load_sample_to_project(dataset_id: str, project_id: str) -> Dict[str, Any]:
             tbl_name = file_path.stem.lower().replace(" ", "_")
             fhash = FileManager.calculate_sha256(file_path)
             df = FileManager.read_table_dataframe(file_path)
-            fid = f"file_{dataset_id}_{tbl_name[:8]}"
+            fid = f"file_{dataset_id}_{tbl_name[:8]}_{uuid.uuid4().hex[:8]}"
             DatabaseService.delete_project_file_by_table(project_id, tbl_name)
             DatabaseService.add_project_file(
                 file_id=fid,

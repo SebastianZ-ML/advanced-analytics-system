@@ -182,6 +182,12 @@
       </svg>
     );
 
+    const IconInfo = () => (
+      <svg className="w-4 h-4 text-[#2997FF]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+      </svg>
+    );
+
     const IconHelpCircle = () => (
       <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
@@ -430,6 +436,63 @@
       );
     }
 
+    // Safe fetch helper: inspects HTTP status and Content-Type, parses JSON safely,
+    // normalizes errors, and extracts trace_id without throwing JSON parse syntax errors.
+    const safeFetchJson = async (url, options = {}) => {
+      let res;
+      try {
+        res = await fetch(url, options);
+      } catch (netErr) {
+        const err = new Error(`Error de conexión: no fue posible comunicarse con el backend (${netErr.message || 'Fallo de red'}).`);
+        err.isNetworkError = true;
+        err.errorCode = 'NETWORK_ERROR';
+        throw err;
+      }
+
+      const contentType = res.headers.get('content-type') || '';
+      let data = null;
+      let rawText = '';
+
+      if (contentType.includes('application/json')) {
+        try {
+          data = await res.json();
+        } catch (jsonErr) {
+          rawText = await res.text().catch(() => '');
+        }
+      } else {
+        rawText = await res.text().catch(() => '');
+      }
+
+      if (!res.ok) {
+        let errorMsg = `Error del servidor (${res.status})`;
+        let traceId = null;
+        let errorCode = `HTTP_${res.status}`;
+
+        if (data && typeof data === 'object') {
+          errorMsg = data.message || data.detail || (typeof data === 'string' ? data : JSON.stringify(data));
+          traceId = data.trace_id || null;
+          errorCode = data.error_code || errorCode;
+        } else if (rawText) {
+          const cleanText = rawText.trim();
+          errorMsg = cleanText.length > 200 ? cleanText.substring(0, 200) + '...' : cleanText;
+        }
+
+        const err = new Error(errorMsg);
+        err.status = res.status;
+        err.traceId = traceId;
+        err.errorCode = errorCode;
+        err.data = data;
+        throw err;
+      }
+
+      if (data !== null) return data;
+      try {
+        return JSON.parse(rawText);
+      } catch (_) {
+        return rawText;
+      }
+    };
+
     // --- Main Application Component ---
     function App() {
       // 6 Main Steps
@@ -462,6 +525,7 @@
       );
       const [interpretation, setInterpretation] = useState(null);
       const [interpreting, setInterpreting] = useState(false);
+      const [interpretError, setInterpretError] = useState(null);
       const [userClarifications, setUserClarifications] = useState({});
 
       // Execution State
@@ -492,13 +556,11 @@
       const timerRef = useRef(null);
 
       useEffect(() => {
-        fetch('/api/health')
-          .then(r => r.json())
+        safeFetchJson('/api/health')
           .then(d => setHealth(d))
           .catch(e => console.error('Error al consultar salud:', e));
 
-        fetch('/api/samples')
-          .then(r => r.json())
+        safeFetchJson('/api/samples')
           .then(d => setSamplesCatalog(d))
           .catch(e => console.error('Error al consultar catálogo de pruebas:', e));
 
@@ -519,24 +581,22 @@
 
       const loadProjects = async () => {
         try {
-          const res = await fetch('/api/projects');
-          const data = await res.json();
+          const data = await safeFetchJson('/api/projects');
           setProjects(data);
           if (data.length > 0 && !selectedProject) {
             selectProject(data[0].project_id);
           }
         } catch (e) {
-          console.error(e);
+          console.error('Error al cargar proyectos:', e);
         }
       };
 
       const selectProject = async (projectId) => {
         try {
-          const res = await fetch(`/api/projects/${projectId}`);
-          const data = await res.json();
+          const data = await safeFetchJson(`/api/projects/${projectId}`);
           setSelectedProject(data);
         } catch (e) {
-          console.error(e);
+          console.error('Error al seleccionar proyecto:', e);
         }
       };
 
@@ -545,17 +605,16 @@
         if (!name || !name.trim()) return;
         const desc = prompt('Descripción del análisis (opcional):') || '';
         try {
-          const res = await fetch('/api/projects', {
+          const newProj = await safeFetchJson('/api/projects', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: name.trim(), description: desc.trim() })
           });
-          const newProj = await res.json();
           await loadProjects();
           await selectProject(newProj.project_id);
           setCurrentStep('data');
         } catch (e) {
-          alert('Error al crear proyecto: ' + e);
+          alert('Error al crear proyecto: ' + e.message);
         }
       };
 
@@ -576,14 +635,10 @@
         }
 
         try {
-          const res = await fetch(`/api/projects/${selectedProject.project_id}/preview_upload`, {
+          const data = await safeFetchJson(`/api/projects/${selectedProject.project_id}/preview_upload`, {
             method: 'POST',
             body: formData
           });
-          const data = await res.json();
-          if (!res.ok) {
-            throw new Error(data.detail || 'Error al previsualizar archivo');
-          }
           setUploadPreview(data);
           setUploadOptions(prev => ({
             ...prev,
@@ -617,30 +672,28 @@
         }
 
         try {
-          const res = await fetch(`/api/projects/${selectedProject.project_id}/upload`, {
-            method: 'POST',
-            body: formData
-          });
-          const data = await res.json();
-          if (!res.ok) {
-            if (res.status === 409) {
-              // Collision prompt
-              const replace = confirm(`${data.detail}\n\n¿Deseas REEMPLAZAR la versión existente de esta tabla?`);
+          let data;
+          try {
+            data = await safeFetchJson(`/api/projects/${selectedProject.project_id}/upload`, {
+              method: 'POST',
+              body: formData
+            });
+          } catch (err) {
+            if (err.status === 409) {
+              const replace = confirm(`${err.message}\n\n¿Deseas REEMPLAZAR la versión existente de esta tabla?`);
               if (replace) {
                 setUploadOptions(o => ({ ...o, replaceExisting: true }));
-                // Retry with replace_existing = true
                 formData.set('replace_existing', 'true');
-                const retryRes = await fetch(`/api/projects/${selectedProject.project_id}/upload`, {
+                data = await safeFetchJson(`/api/projects/${selectedProject.project_id}/upload`, {
                   method: 'POST',
                   body: formData
                 });
-                if (!retryRes.ok) throw new Error('Error al reemplazar tabla');
               } else {
                 setUploading(false);
                 return;
               }
             } else {
-              throw new Error(data.detail || 'Error al incorporar tabla');
+              throw err;
             }
           }
 
@@ -658,10 +711,10 @@
       const handleDeleteFile = async (fileId) => {
         if (!confirm('¿Deseas eliminar esta tabla del proyecto?')) return;
         try {
-          await fetch(`/api/projects/${selectedProject.project_id}/files/${fileId}`, { method: 'DELETE' });
+          await safeFetchJson(`/api/projects/${selectedProject.project_id}/files/${fileId}`, { method: 'DELETE' });
           await selectProject(selectedProject.project_id);
         } catch (e) {
-          alert('Error al eliminar archivo: ' + e);
+          alert('Error al eliminar archivo: ' + e.message);
         }
       };
 
@@ -669,15 +722,14 @@
         if (!selectedProject) return;
         setUploading(true);
         try {
-          const res = await fetch(`/api/samples/${sampleId}/load_to_project/${selectedProject.project_id}`, { method: 'POST' });
-          const data = await res.json();
+          const data = await safeFetchJson(`/api/samples/${sampleId}/load_to_project/${selectedProject.project_id}`, { method: 'POST' });
           await selectProject(selectedProject.project_id);
           if (data.sample_metadata?.suggested_questions?.[0]) {
             setBusinessQuestion(data.sample_metadata.suggested_questions[0]);
           }
           alert(`Conjunto '${data.sample_metadata?.title || sampleId}' incorporado con éxito (${data.tables.length} tablas).`);
         } catch (e) {
-          alert('Error al cargar datos de muestra: ' + e);
+          alert('Error al cargar datos de muestra: ' + e.message);
         } finally {
           setUploading(false);
         }
@@ -687,16 +739,13 @@
       const handleInterpretQuestion = async () => {
         if (!selectedProject || !businessQuestion.trim()) return;
         setInterpreting(true);
+        setInterpretError(null);
         try {
-          const res = await fetch(`/api/projects/${selectedProject.project_id}/interpret_objective`, {
+          const data = await safeFetchJson(`/api/projects/${selectedProject.project_id}/interpret_objective`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ objective_question: businessQuestion })
           });
-          const data = await res.json();
-          if (!res.ok) {
-            throw new Error(data.detail || 'Error en la pre-interpretación');
-          }
           setInterpretation(data);
 
           // Populate default clarifications
@@ -708,7 +757,13 @@
 
           setCurrentStep('clarifications');
         } catch (e) {
-          alert('No fue posible interpretar el problema: ' + e.message);
+          console.error('Error al interpretar objetivo:', e);
+          setInterpretError({
+            message: e.message || 'No fue posible interpretar el problema.',
+            traceId: e.traceId,
+            errorCode: e.errorCode,
+            isNetwork: !!e.isNetworkError
+          });
         } finally {
           setInterpreting(false);
         }
@@ -723,7 +778,7 @@
         setCurrentStep('execution');
 
         try {
-          const res = await fetch(`/api/projects/${selectedProject.project_id}/runs`, {
+          const data = await safeFetchJson(`/api/projects/${selectedProject.project_id}/runs`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -731,10 +786,6 @@
               user_clarifications: userClarifications
             })
           });
-          const data = await res.json();
-          if (!res.ok) {
-            throw new Error(data.detail || 'Error en la ejecución del pipeline');
-          }
 
           setCurrentRun(data);
           // Fetch artifacts
@@ -751,7 +802,7 @@
       const handleCancelRun = async () => {
         if (!currentRun) return;
         try {
-          await fetch(`/api/runs/${currentRun.run_id}/cancel`, { method: 'POST' });
+          await safeFetchJson(`/api/runs/${currentRun.run_id}/cancel`, { method: 'POST' });
           setExecuting(false);
           alert('Ejecución cancelada por el usuario.');
         } catch (e) {
@@ -761,8 +812,7 @@
 
       const fetchArtifacts = async (runId) => {
         try {
-          const res = await fetch(`/api/runs/${runId}/artifacts`);
-          const data = await res.json();
+          const data = await safeFetchJson(`/api/runs/${runId}/artifacts`);
           setArtifacts(data);
         } catch (e) {
           console.error(e);
@@ -771,8 +821,7 @@
 
       const fetchEvents = async (runId) => {
         try {
-          const res = await fetch(`/api/runs/${runId}/events`);
-          const data = await res.json();
+          const data = await safeFetchJson(`/api/runs/${runId}/events`);
           setRunEvents(data);
         } catch (e) {
           console.error(e);
@@ -787,7 +836,7 @@
 
         try {
           // Ask assistant for recalculation on the immutable snapshot
-          const res = await fetch('/api/chat', {
+          const data = await safeFetchJson('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -797,7 +846,6 @@
               active_filters: newFilters
             })
           });
-          const data = await res.json();
           setChatMessages(prev => [
             ...prev,
             { sender: 'user', text: `Filtro aplicado: ${dimKey} = "${dimVal}"`, citations: [] },
@@ -829,7 +877,7 @@
         setChatLoading(true);
 
         try {
-          const res = await fetch('/api/chat', {
+          const data = await safeFetchJson('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -839,7 +887,6 @@
               active_filters: activeFilters
             })
           });
-          const data = await res.json();
           setChatMessages(prev => [...prev, {
             sender: 'assistant',
             text: data.answer_text,
@@ -851,7 +898,7 @@
         } catch (e) {
           setChatMessages(prev => [...prev, {
             sender: 'assistant',
-            text: 'Error al consultar al asistente: ' + e,
+            text: 'Error al consultar al asistente: ' + e.message,
             citations: []
           }]);
         } finally {
@@ -1392,6 +1439,35 @@
                       </div>
                     </div>
 
+                    {/* Error de Interpretación */}
+                    {interpretError && (
+                      <div className="p-4 bg-[rgba(255,69,58,0.12)] border border-[rgba(255,69,58,0.3)] rounded-2xl text-xs space-y-2">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-2">
+                              <IconAlert />
+                              <h4 className="font-semibold text-sm text-[#FF453A]">
+                                No fue posible interpretar el problema
+                              </h4>
+                            </div>
+                            <p className="text-xs text-[#F5F5F7] pl-6">{interpretError.message}</p>
+                            {interpretError.traceId && (
+                              <p className="text-[11px] text-[#8E8E93] pl-6 font-mono">
+                                Código de error: {interpretError.errorCode} | Seguimiento: {interpretError.traceId}
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            onClick={handleInterpretQuestion}
+                            disabled={interpreting}
+                            className="btn-apple-primary px-3 py-1.5 text-xs text-[#FFFFFF] shrink-0 ml-4"
+                          >
+                            Reintentar
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex justify-end pt-4 border-t border-[rgba(255,255,255,0.06)]">
                       <button
                         onClick={handleInterpretQuestion}
@@ -1418,6 +1494,14 @@
 
                   {interpretation && (
                     <div className="space-y-6">
+                      {/* Aviso del Proveedor / Modo Heurístico si aplica */}
+                      {interpretation.provider_notice && (
+                        <div className="p-3.5 bg-[rgba(41,151,255,0.08)] border border-[rgba(41,151,255,0.25)] rounded-xl text-xs text-[#2997FF] flex items-center space-x-2.5">
+                          <IconInfo />
+                          <span>{interpretation.provider_notice}</span>
+                        </div>
+                      )}
+
                       {/* Advertencia de No Soportado si aplica */}
                       {!interpretation.is_supported && (
                         <div className="p-4 bg-[rgba(255,69,58,0.12)] border border-[rgba(255,69,58,0.3)] rounded-2xl text-xs text-[#FF453A] space-y-2">

@@ -37,6 +37,8 @@ class ObjectiveSpec(BaseModel):
     excluded_scope: List[str] = Field(default_factory=list)
     status: Literal["draft", "confirmed", "requires_revision"] = "draft"
     is_demo_mode: bool = False
+    provider_notice: Optional[str] = None
+    fallback_reason: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 

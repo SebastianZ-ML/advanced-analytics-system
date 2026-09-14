@@ -3,7 +3,7 @@ Agent B: Data Auditor (Agente Auditor de Datos).
 Inventories tables, profiles columns, detects quality anomalies,
 evaluates foreign keys, and proposes confirmed/unconfirmed relationships.
 """
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 import pandas as pd
 from app.agents.base import BaseAgent
 from app.contracts import DataCatalog, DataQualityReport, RelationshipSpec, TableProfile
@@ -56,3 +56,33 @@ class DataAuditorAgent(BaseAgent):
         )
 
         return catalog, dq_report, relationships
+
+    def audit_dataset(
+        self,
+        project_id: str,
+        tables: Dict[str, pd.DataFrame],
+        files_info: Optional[List[Dict[str, Any]]] = None,
+        file_metadata: Optional[Dict[str, Dict[str, str]]] = None
+    ) -> Tuple[DataCatalog, DataQualityReport, List[RelationshipSpec]]:
+        """
+        Convenience alias accepting either a list of file info dictionaries
+        or a mapped file_metadata dictionary.
+        """
+        meta_dict: Dict[str, Dict[str, str]] = {}
+        if file_metadata:
+            meta_dict = file_metadata
+        elif files_info:
+            for f in files_info:
+                tname = f.get("table_name", "")
+                if tname:
+                    meta_dict[tname] = {
+                        "filename": f.get("filename", f"{tname}.csv"),
+                        "sheet_name": f.get("sheet_name"),
+                        "file_hash": f.get("file_hash", "UNKNOWN_HASH")
+                    }
+
+        return self.audit_project_tables(
+            project_id=project_id,
+            loaded_tables=tables,
+            file_metadata=meta_dict
+        )
